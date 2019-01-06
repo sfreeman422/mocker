@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 
 app.post('/mock', (req, res) => {
   console.log(req.body.text);
-  const mocked = mock(req.body.text);
+  const mocked = mocker(req.body.text);
   res.send(mocked);
 });
 
