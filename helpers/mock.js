@@ -1,4 +1,4 @@
-export function mock(input) {
+function mock(input) {
   let output = '';
   let count = 0;
   for (let i = 0; i < input.length; i++) {
@@ -11,3 +11,5 @@ export function mock(input) {
   }
   return output;
 }
+
+module.exports = mock;
