@@ -9,9 +9,13 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.post('/mock', (req, res) => {
-  console.log(req.body.text);
+  console.log(req.body);
   const mocked = mocker(req.body.text);
-  res.send(mocked);
+  const response = {
+    response_type: "in_channel",
+    text: mocked
+  }
+  res.send(response);
 });
 
 app.listen(PORT, (e) => {
