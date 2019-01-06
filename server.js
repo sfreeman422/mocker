@@ -26,6 +26,7 @@ app.post('/mock', (req, res) => {
     .then(() => console.log(`Successfully responded to: ${req.body.response_url}`))
     .catch((e) => console.error(`Error responding: ${req.body.response_url}`));
   res.status(200);
+  res.send();
 });
 
 app.listen(PORT, (e) => {
