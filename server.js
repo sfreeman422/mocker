@@ -12,10 +12,6 @@ app.use(bodyParser.json());
 app.post('/mock', (req, res) => {
   console.log(req.body);
   const mocked = mocker(req.body.text);
-  const ephem_response = {
-    response_type: "ephemeral",
-    text: "\`Processing mock and sending to channel...\`"
-  }
   const response = {
     response_type: "in_channel",
     text: `<@${req.body.user_id}>`,
@@ -29,8 +25,7 @@ app.post('/mock', (req, res) => {
   axios.post(req.body.response_url, response)
     .then(() => console.log(`Successfully responded to: ${req.body.response_url}`))
     .catch((e) => console.error(`Error responding: ${req.body.response_url}`));
-  res.setHeader('Content-type', 'application/json');
-  res.send(ephem_response);
+  res.status(200);
 });
 
 app.listen(PORT, (e) => {
