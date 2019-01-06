@@ -18,9 +18,12 @@ app.post('/mock', (req, res) => {
         text: mocked
       }
     ]
-  }
-  res.setHeader('content-type', 'application/json');
-  res.send(response);
+  };
+
+  axios.post(req.body.response_url, response)
+    .then(() => console.log(`Successfully responded to: ${req.body.response_url}`))
+    .catch((e) => console.error(`Error responding: ${req.body.response_url}`));
+  res.end();
 });
 
 app.listen(PORT, (e) => {
