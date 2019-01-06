@@ -14,7 +14,7 @@ app.post('/mock', (req, res) => {
   const mocked = mocker(req.body.text);
   const ephem_response = {
     response_type: "ephemeral",
-    text: "Processing mock..."
+    text: "_Processing mock... (Only you can see this)_"
   }
   const response = {
     response_type: "in_channel",
