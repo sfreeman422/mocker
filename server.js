@@ -14,6 +14,7 @@ app.post('/mock', (req, res) => {
   const mocked = mocker(req.body.text);
   const response = {
     response_type: "in_channel",
+    text: `@${req.body.user_name}`,
     attachments: [
       {
         text: mocked
@@ -24,6 +25,7 @@ app.post('/mock', (req, res) => {
   axios.post(req.body.response_url, response)
     .then(() => console.log(`Successfully responded to: ${req.body.response_url}`))
     .catch((e) => console.error(`Error responding: ${req.body.response_url}`));
+  res.send('Mock received, sending to chat');
 });
 
 app.listen(PORT, (e) => {
