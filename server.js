@@ -24,7 +24,6 @@ app.post('/mock', (req, res) => {
   axios.post(req.body.response_url, response)
     .then(() => console.log(`Successfully responded to: ${req.body.response_url}`))
     .catch((e) => console.error(`Error responding: ${req.body.response_url}`));
-  res.sendStatus(200);
 });
 
 app.listen(PORT, (e) => {
