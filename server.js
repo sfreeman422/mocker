@@ -9,8 +9,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.post('/mock', (req, res) => {
-  console.log(req.body);
-  res.send('test');
+  console.log(req.body.text);
+  const mocked = mock(req.body.text);
+  res.send(mocked);
 });
 
 app.listen(PORT, (e) => {
