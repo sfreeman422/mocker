@@ -20,6 +20,7 @@ app.post('/mock', (req, res) => {
       }
     ]
   }
+  res.setHeader('content-type', 'application/json');
   res.send(response);
 });
 
