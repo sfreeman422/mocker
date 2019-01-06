@@ -14,9 +14,11 @@ app.post('/mock', (req, res) => {
   const response = {
     response_type: "in_channel",
     text: `@${req.body.user_name}`,
-    attachments: {
-      text: mocked
-    }
+    attachments: [
+      {
+        text: mocked
+      }
+    ]
   }
   res.send(response);
 });
