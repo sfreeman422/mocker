@@ -34,6 +34,7 @@ app.post("/mock", (req, res) => {
 app.post("/define", async (req, res) => {
   console.log(req.body.text);
   console.log(process.env.dictKey);
+
   const word = req.body.text;
   const defined = await define(word);
 
@@ -45,8 +46,9 @@ app.post("/define", async (req, res) => {
 
   sendResponse(req.body.response_url, response);
 
+  console.log("sending the 200");
   res.status(200);
-  res.send(response);
+  res.send();
 });
 
 app.listen(PORT, e => {
