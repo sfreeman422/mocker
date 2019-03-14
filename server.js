@@ -40,7 +40,7 @@ app.post("/define", async (req, res) => {
 
   const response = {
     response_type: "in_channel",
-    text: capitalizeFirstLetter(req.body.text),
+    text: `*${capitalizeFirstLetter(req.body.text)}* \n Definitions:`,
     attachments: formatDefs(defined[0].shortdef)
   };
 
