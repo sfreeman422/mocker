@@ -6,8 +6,14 @@ function define(word) {
       process.env.dictKey
     }`
   )
-    .then(res => res.data)
-    .catch(e => e);
+    .then(res => {
+      console.log(res.data);
+      return res.data;
+    })
+    .catch(e => {
+      console.log("error", e);
+      return e;
+    });
   return response;
 }
 
