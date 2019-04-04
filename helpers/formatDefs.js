@@ -8,10 +8,15 @@ function formatDefs(defArr) {
   const maxDefinitions = 3;
   for (let i = 0; i < maxDefinitions; i++) {
     formattedArr.push({
-      text: `${i + 1}. ${capitalizeFirstLetter(defArr[i].definition)}`
+      text: formatUrbanD(
+        `${i + 1}. ${capitalizeFirstLetter(defArr[i].definition)}`
+      )
     });
   }
   return formattedArr;
 }
 
+function formatUrbanD(definition) {
+  return definition.replace(/\[/g, "*").replace(/]/g, "*");
+}
 module.exports = formatDefs;
