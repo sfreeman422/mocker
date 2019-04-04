@@ -5,7 +5,8 @@ function formatDefs(defArr) {
     return [{ text: "Sorry no definitions found" }];
   }
   const formattedArr = [];
-  for (let i = 0; i < defArr.length; i++) {
+  const maxDefinitions = 3;
+  for (let i = 0; i < maxDefinitions; i++) {
     formattedArr.push({
       text: `${i + 1}. ${capitalizeFirstLetter(defArr[i].definition)}`
     });
