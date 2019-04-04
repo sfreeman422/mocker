@@ -1,7 +1,7 @@
 const capitalizeFirstLetter = require("./capitalizeFirstLetter");
 
 function formatDefs(defArr) {
-  if (!defArr) {
+  if (!defArr || defArr.length === 0) {
     return [{ text: "Sorry no definitions found" }];
   }
   const formattedArr = [];
