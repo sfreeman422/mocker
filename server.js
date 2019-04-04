@@ -37,16 +37,14 @@ app.post("/define", async (req, res) => {
 
   const word = req.body.text;
   const defined = await define(word);
-
   const response = {
     response_type: "in_channel",
     text: `*${capitalizeFirstLetter(req.body.text)}*`,
-    attachments: formatDefs(defined[0].shortdef)
+    attachments: formatDefs(defined.list)
   };
 
   sendResponse(req.body.response_url, response);
 
-  console.log("sending the 200");
   res.status(200);
   res.send();
 });

@@ -7,7 +7,7 @@ function formatDefs(defArr) {
   const formattedArr = [];
   for (let i = 0; i < defArr.length; i++) {
     formattedArr.push({
-      text: `${i + 1}. ${capitalizeFirstLetter(defArr[i])}`
+      text: `${i + 1}. ${capitalizeFirstLetter(defArr[i].definition)}`
     });
   }
   return formattedArr;
