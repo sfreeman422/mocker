@@ -1,11 +1,12 @@
 const capitalizeFirstLetter = require("./capitalizeFirstLetter");
 
 function formatDefs(defArr) {
+  console.log("def arr", defArr);
   if (!defArr || defArr.length === 0) {
     return [{ text: "Sorry no definitions found" }];
   }
   const formattedArr = [];
-  const maxDefinitions = 3;
+  const maxDefinitions = defArr.length <= 3 ? defArr.length : 3;
   for (let i = 0; i < maxDefinitions; i++) {
     formattedArr.push({
       text: formatUrbanD(
