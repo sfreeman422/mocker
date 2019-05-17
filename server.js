@@ -34,7 +34,7 @@ function addUserToMuzzled(toMuzzle, friendlyMuzzle, requestor) {
     throw new Error(`You can't muzzle someone if you are already muzzled!`);
   } else {
     muzzled.push(toMuzzle);
-    setTimeout(() => removeMuzzle(toMuzzle), 300000);
+    setTimeout(() => removeMuzzle(toMuzzle), timeTomuzzle);
     return `Succesfully muzzled ${friendlyMuzzle} for ${
       seconds == 60
         ? minutes + 1 + ":00"
