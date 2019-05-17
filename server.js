@@ -19,6 +19,9 @@ const web = new WebClient(muzzleToken);
 const muzzled = [];
 
 function addUserToMuzzled(toMuzzle, requestor) {
+  const timeToMuzzle = Math.floor(Math.random() * (180000 - 30000 + 1) + 30000);
+  const minutes = Math.floor(timeToMuzzle / 60000);
+  const seconds = ((timeToMuzzle % 60000) / 1000).toFixed(0);
   if (muzzled.includes(toMuzzle)) {
     console.error(
       `${requestor} attempted to muzzle ${toMuzzle} but ${toMuzzle} is already muzzled.`
@@ -32,6 +35,11 @@ function addUserToMuzzled(toMuzzle, requestor) {
   } else {
     muzzled.push(toMuzzle);
     setTimeout(() => removeMuzzle(toMuzzle), 300000);
+    return `Succesfully muzzled ${toMuzzle} for ${
+      seconds == 60
+        ? minutes + 1 + ":00"
+        : minutes + ":" + (seconds < 10 ? "0" : "") + seconds
+    } minutes`;
   }
 }
 
@@ -111,8 +119,7 @@ app.post("/muzzle", async (req, res) => {
   const userId = getUserId(req.body.text);
   const userName = getUserName(req.body.text);
   try {
-    addUserToMuzzled(userId, req.body.user_name);
-    res.send(`Successfully muzzled ${userName} for 5 minutes!`);
+    res.send(addUserToMuzzled(userId, req.body.user_name));
   } catch (e) {
     res.send(e.message);
   }
