@@ -34,6 +34,9 @@ function addUserToMuzzled(toMuzzle, friendlyMuzzle, requestor) {
     throw new Error(`You can't muzzle someone if you are already muzzled!`);
   } else {
     muzzled.push(toMuzzle);
+    console.log(
+      `${friendlyMuzzle} is now muzzled for ${timeToMuzzle} milliseconds`
+    );
     setTimeout(() => removeMuzzle(toMuzzle), timeTomuzzle);
     return `Succesfully muzzled ${friendlyMuzzle} for ${
       seconds == 60
@@ -53,7 +56,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.post("/mock", (req, res) => {
-  console.log(req.body);
   const mocked = mocker(req.body.text);
   const response = {
     response_type: "in_channel",
@@ -72,9 +74,6 @@ app.post("/mock", (req, res) => {
 });
 
 app.post("/define", async (req, res) => {
-  console.log(req.body.text);
-  console.log(process.env.dictKey);
-
   const word = req.body.text;
   const defined = await define(word);
   const response = {
@@ -115,7 +114,6 @@ app.post("/muzzle/handle", async (req, res) => {
 });
 
 app.post("/muzzle", async (req, res) => {
-  console.log(req.body);
   const userId = getUserId(req.body.text);
   const userName = getUserName(req.body.text);
   try {
