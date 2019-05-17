@@ -7,6 +7,8 @@ const capitalizeFirstLetter = require("./helpers/capitalizeFirstLetter");
 const formatDefs = require("./helpers/formatDefs");
 const sendResponse = require("./helpers/sendResponse");
 const muzzleText = require("./helpers/muzzle");
+const getUserId = require("./helpers/getUserId");
+const getUserName = require("./helpers/getUserName");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,7 +16,30 @@ const muzzleToken = process.env.muzzleBotToken;
 const web = new WebClient(muzzleToken);
 
 // test for jr
-const muzzled = ["U2YJQN2KB"];
+const muzzled = [];
+
+function addUserToMuzzled(toMuzzle, requestor) {
+  if (muzzled.includes(toMuzzle)) {
+    console.error(
+      `${requestor} attempted to muzzle ${toMuzzle} but ${toMuzzle} is already muzzled.`
+    );
+    throw new Error(`User is already muzzled!`);
+  } else if (muzzled.includes(requestor)) {
+    console.error(
+      `User: ${requestor} attempted to muzzle ${toMuzzle} but failed because requestor: ${requestor} is currently muzzled`
+    );
+    throw new Error(`You can't muzzle someone if you are already muzzled!`);
+  } else {
+    muzzled.push(toMuzzle);
+    setTimeout(() => removeMuzzle(toMuzzle), 300000);
+  }
+}
+
+function removeMuzzle(user) {
+  console.log(`Attempting to remove ${user}'s muzzle...`);
+  muzzled.splice(muzzled.indexOf(user), 1);
+  console.log(`Removed ${user}'s muzzle! He is free at last.`);
+}
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -57,7 +82,6 @@ app.post("/define", async (req, res) => {
 });
 
 app.post("/muzzle/handle", async (req, res) => {
-  console.log(req.body.event);
   if (muzzled.includes(req.body.event.user)) {
     console.log(`${req.body.event.user} is muzzled! Suppressing his voice...`);
     const deleteRequest = {
@@ -75,21 +99,23 @@ app.post("/muzzle/handle", async (req, res) => {
       )}"`
     };
 
-    web.chat
-      .delete(deleteRequest)
-      .then(response => console.log(response))
-      .catch(e => console.error(e));
+    web.chat.delete(deleteRequest).catch(e => console.error(e));
 
-    web.chat
-      .postMessage(postRequest)
-      .then(response => console.log(response))
-      .catch(e => console.error(e));
+    web.chat.postMessage(postRequest).catch(e => console.error(e));
   }
   res.send({ challenge: req.body.challenge });
 });
 
 app.post("/muzzle", async (req, res) => {
-  console.log(req.body.text);
+  console.log(req.body);
+  const userId = getUserId(req.body.text);
+  const userName = getUserName(req.body.text);
+  try {
+    addUserToMuzzled(userId, req.body.user_name);
+    res.send(`Successfully muzzled ${userName} for 5 minutes!`);
+  } catch (e) {
+    res.send(e.message);
+  }
 });
 
 app.listen(PORT, e => {
