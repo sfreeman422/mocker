@@ -40,8 +40,8 @@ function addUserToMuzzled(toMuzzle, friendlyMuzzle, requestor) {
     setTimeout(() => removeMuzzle(toMuzzle), timeToMuzzle);
     return `Succesfully muzzled ${friendlyMuzzle} for ${
       seconds == 60
-        ? minutes + 1 + ":00"
-        : minutes + ":" + (seconds < 10 ? "0" : "") + seconds
+        ? minutes + 1 + "m00s"
+        : minutes + "m" + (seconds < 10 ? "0" : "") + seconds + "s"
     } minutes`;
   }
 }
@@ -66,11 +66,13 @@ app.post("/mock", (req, res) => {
       }
     ]
   };
-
-  sendResponse(req.body.response_url, response);
-
-  res.status(200);
-  res.send();
+  const isMuzzled = muzzled.includes(req.body.user_id);
+  if (!isMuzzled) {
+    sendResponse(req.body.response_url, response);
+    res.sendStatus(200);
+  } else if (isMuzzled) {
+    res.send(`Sorry, can't do that while muzzled.`);
+  }
 });
 
 app.post("/define", async (req, res) => {
@@ -82,10 +84,14 @@ app.post("/define", async (req, res) => {
     attachments: formatDefs(defined.list)
   };
 
-  sendResponse(req.body.response_url, response);
+  const isMuzzled = muzzled.includes(req.body.user_id);
 
-  res.status(200);
-  res.send();
+  if (!isMuzzled) {
+    sendResponse(req.body.response_url, response);
+    res.sendStatus(200);
+  } else if (isMuzzled) {
+    res.send(`Sorry, can't do that while muzzled.`);
+  }
 });
 
 app.post("/muzzle/handle", async (req, res) => {
