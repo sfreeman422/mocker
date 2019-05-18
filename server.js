@@ -15,7 +15,6 @@ const PORT = process.env.PORT || 3000;
 const muzzleToken = process.env.muzzleBotToken;
 const web = new WebClient(muzzleToken);
 
-// test for jr
 const muzzled = [];
 
 function addUserToMuzzled(toMuzzle, friendlyMuzzle, requestor) {
@@ -94,7 +93,7 @@ app.post("/define", async (req, res) => {
   }
 });
 
-app.post("/muzzle/handle", async (req, res) => {
+app.post("/muzzle/handle", (req, res) => {
   if (muzzled.includes(req.body.event.user)) {
     console.log(`${req.body.event.user} is muzzled! Suppressing his voice...`);
     const deleteRequest = {
@@ -119,7 +118,7 @@ app.post("/muzzle/handle", async (req, res) => {
   res.send({ challenge: req.body.challenge });
 });
 
-app.post("/muzzle", async (req, res) => {
+app.post("/muzzle", (req, res) => {
   const userId = getUserId(req.body.text);
   const userName = getUserName(req.body.text);
   try {
