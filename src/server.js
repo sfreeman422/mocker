@@ -1,14 +1,13 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { WebClient } = require("@slack/web-api");
-const mocker = require("./helpers/mock");
-const define = require("./helpers/define");
-const capitalizeFirstLetter = require("./helpers/capitalizeFirstLetter");
-const formatDefs = require("./helpers/formatDefs");
-const sendResponse = require("./helpers/sendResponse");
-const muzzleText = require("./helpers/muzzle");
-const getUserId = require("./helpers/getUserId");
-const getUserName = require("./helpers/getUserName");
+const { mock } = require("./utils/mock-utils");
+const { define, capitalizeFirstLetter, formatDefs } = "./helpers/define-utils";
+const { muzzle } = "./helpers/muzzle-utils";
+
+const sendResponse = require("./utils/sendResponse");
+const getUserId = require("./utils/getUserId");
+const getUserName = require("./utils/getUserName");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -55,7 +54,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.post("/mock", (req, res) => {
-  const mocked = mocker(req.body.text);
+  const mocked = mock(req.body.text);
   const response = {
     response_type: "in_channel",
     text: `<@${req.body.user_id}>`,
@@ -106,9 +105,7 @@ app.post("/muzzle/handle", (req, res) => {
     const postRequest = {
       token: muzzleToken,
       channel: req.body.event.channel,
-      text: `<@${req.body.event.user}> says "${muzzleText(
-        req.body.event.text
-      )}"`
+      text: `<@${req.body.event.user}> says "${muzzle(req.body.event.text)}"`
     };
 
     web.chat.delete(deleteRequest).catch(e => console.error(e));
