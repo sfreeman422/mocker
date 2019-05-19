@@ -1,6 +1,6 @@
 const express = require("express");
 const { WebClient } = require("@slack/web-api");
-const { muzzled } = "../server.js";
+const { addUserToMuzzled, isMuzzled } = require("../utils/muzzle/muzzle-utils");
 const getUserName = require("../utils/getUserName");
 const getUserId = require("../utils/getUserId");
 
@@ -9,7 +9,7 @@ const muzzleToken = process.env.muzzleBotToken;
 const web = new WebClient(muzzleToken);
 
 router.post("/muzzle/handle", (req, res) => {
-  if (muzzled.includes(req.body.event.user)) {
+  if (isMuzzled(req.body.event.user)) {
     console.log(`${req.body.event.user} is muzzled! Suppressing his voice...`);
     const deleteRequest = {
       token: muzzleToken,

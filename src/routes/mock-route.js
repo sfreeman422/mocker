@@ -1,6 +1,6 @@
 const express = require("express");
 const { mock } = require("../utils/mock/mock-utils");
-const { muzzled } = require("../server.js");
+const { isMuzzled } = require("../utils/muzzle/muzzle-utils");
 const sendResponse = require("../utils/sendResponse");
 
 const router = express.Router();
@@ -16,11 +16,10 @@ router.post("/mock", (req, res) => {
       }
     ]
   };
-  const isMuzzled = muzzled.includes(req.body.user_id);
-  if (!isMuzzled) {
+  if (!isMuzzled(req.body.user_id)) {
     sendResponse(req.body.response_url, response);
     res.status(200).send();
-  } else if (isMuzzled) {
+  } else if (isMuzzled(req.body.user_id)) {
     res.send(`Sorry, can't do that while muzzled.`);
   }
 });

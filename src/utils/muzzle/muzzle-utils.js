@@ -17,6 +17,16 @@ function muzzle(text) {
 }
 
 /**
+ * Tells whether or not a user has been added to the muzzled arary
+ *
+ * @param {*} user - a user
+ * @returns
+ */
+function isMuzzled(user) {
+  return muzzled.includes(user);
+}
+
+/**
  * Adds a user to the muzzled array and sets a timeout to remove the muzzle within a random time of 30 seconds to 3 minutes
  *
  * @param {*} toMuzzle
@@ -64,3 +74,6 @@ function isRandomEven() {
 
 exports.muzzle = muzzle;
 exports.isRandomEven = isRandomEven;
+exports.isMuzzled = isMuzzled;
+exports.removeMuzzle = removeMuzzle;
+exports.addUserToMuzzled = addUserToMuzzled;
