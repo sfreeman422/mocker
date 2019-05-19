@@ -19,7 +19,7 @@ router.post("/mock", (req, res) => {
   const isMuzzled = muzzled.includes(req.body.user_id);
   if (!isMuzzled) {
     sendResponse(req.body.response_url, response);
-    res.sendStatus(200);
+    res.status(200).send();
   } else if (isMuzzled) {
     res.send(`Sorry, can't do that while muzzled.`);
   }
