@@ -1,6 +1,6 @@
 const express = require("express");
 const { WebClient } = require("@slack/web-api");
-const { muzzle } = "../utils/muzzle-utils";
+const { muzzled } = "../server.js";
 const getUserName = require("../utils/getUserName");
 const getUserId = require("../utils/getUserId");
 

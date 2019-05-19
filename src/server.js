@@ -6,6 +6,7 @@ const defineRoutes = require("./routes/define-route");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const muzzled = [];
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -20,3 +21,5 @@ app.listen(PORT, e => {
     console.log("Successfully listening on port 3000");
   }
 });
+
+exports.muzzled = muzzled;

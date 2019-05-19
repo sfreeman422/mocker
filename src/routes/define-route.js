@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { define, capitalizeFirstLetter, formatDefs } = "../utils/define-utils";
 const sendResponse = require("../utils/sendResponse");
+const { muzzled } = require("../server");
 
 router.post("/define", async (req, res) => {
   const word = req.body.text;

@@ -1,6 +1,6 @@
 const express = require("express");
 const { mock } = require("../utils/mock/mock-utils");
-const { muzzled } = require("../utils/muzzle/muzzle-utils");
+const { muzzled } = require("../server.js");
 const sendResponse = require("../utils/sendResponse");
 
 const router = express.Router();
