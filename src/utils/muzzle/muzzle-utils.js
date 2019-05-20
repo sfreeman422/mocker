@@ -63,7 +63,6 @@ function addUserToMuzzled(toMuzzle, friendlyMuzzle, requestor) {
 }
 
 function removeMuzzle(user) {
-  console.log(`Attempting to remove ${user}'s muzzle...`);
   muzzled.splice(muzzled.indexOf(user), 1);
   console.log(`Removed ${user}'s muzzle! He is free at last.`);
 }
