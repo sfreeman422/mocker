@@ -73,6 +73,7 @@ function isRandomEven() {
 }
 
 exports.muzzle = muzzle;
+exports.muzzled = muzzled;
 exports.isRandomEven = isRandomEven;
 exports.isMuzzled = isMuzzled;
 exports.removeMuzzle = removeMuzzle;
