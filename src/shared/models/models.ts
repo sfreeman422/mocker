@@ -2,7 +2,7 @@ export interface UrbanDictionaryResponse {
   list: UrbanDictionaryDefinition[];
 }
 
-export interface DefinitionResponse {
+export interface SlackChannelResponse {
   response_type: string;
   text: string;
   attachments: FormattedUrbanDictionaryDefinitionResponse[];

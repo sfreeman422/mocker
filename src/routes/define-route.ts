@@ -1,6 +1,6 @@
 import express, { Router, Request, Response } from "express";
 import {
-  DefinitionResponse,
+  SlackChannelResponse,
   UrbanDictionaryResponse
 } from "../shared/models/models";
 import {
@@ -17,7 +17,7 @@ defineRoutes.post("/define", async (req: Request, res: Response) => {
   const word: string = req.body.text;
   try {
     const defined: UrbanDictionaryResponse = await define(word);
-    const response: DefinitionResponse = {
+    const response: SlackChannelResponse = {
       response_type: "in_channel",
       text: `*${capitalizeFirstLetter(req.body.text)}*`,
       attachments: formatDefs(defined.list)

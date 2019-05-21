@@ -1,13 +1,14 @@
 import express, { Router } from "express";
-const { mock } = require("../utils/mock/mock-utils");
-const { isMuzzled } = require("../utils/muzzle/muzzle-utils");
-const sendResponse = require("../utils/sendResponse");
+import { SlackChannelResponse } from "../shared/models/models";
+import { mock } from "../utils/mock/mock-utils";
+import { isMuzzled } from "../utils/muzzle/muzzle-utils";
+import { sendResponse } from "../utils/sendResponse";
 
 export const mockRoutes: Router = express.Router();
 
 mockRoutes.post("/mock", (req, res) => {
-  const mocked = mock(req.body.text);
-  const response = {
+  const mocked: string = mock(req.body.text);
+  const response: SlackChannelResponse = {
     response_type: "in_channel",
     text: `<@${req.body.user_id}>`,
     attachments: [

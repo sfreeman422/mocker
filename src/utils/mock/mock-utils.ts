@@ -1,4 +1,4 @@
-function mock(input) {
+export function mock(input: string): string {
   let output = "";
   if (!input || input.length === 0) {
     return input;
@@ -17,5 +17,3 @@ function mock(input) {
     return output;
   }
 }
-
-exports.mock = mock;
