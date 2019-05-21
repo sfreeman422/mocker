@@ -1,11 +1,11 @@
-const express = require("express");
+import express, { Router } from "express";
 const { mock } = require("../utils/mock/mock-utils");
 const { isMuzzled } = require("../utils/muzzle/muzzle-utils");
 const sendResponse = require("../utils/sendResponse");
 
-const router = express.Router();
+export const mockRoutes: Router = express.Router();
 
-router.post("/mock", (req, res) => {
+mockRoutes.post("/mock", (req, res) => {
   const mocked = mock(req.body.text);
   const response = {
     response_type: "in_channel",
@@ -23,5 +23,3 @@ router.post("/mock", (req, res) => {
     res.send(`Sorry, can't do that while muzzled.`);
   }
 });
-
-module.exports = router;
