@@ -24,7 +24,6 @@ defineRoutes.post("/define", async (req: Request, res: Response) => {
     };
 
     if (!isMuzzled(req.body.user_id)) {
-      console.log(response);
       sendResponse(req.body.response_url, response);
       res.status(200).send();
     } else if (isMuzzled(req.body.user_id)) {
