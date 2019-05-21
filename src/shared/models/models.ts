@@ -26,3 +26,16 @@ export interface UrbanDictionaryDefinition {
   current_vote?: string;
   sound_urls?: any[];
 }
+
+export interface SlackDeleteMessageRequest {
+  token: string;
+  channel: string;
+  ts: string;
+  as_user: boolean;
+}
+
+export interface SlackPostMessageRequest {
+  token: string;
+  channel: string;
+  text: string;
+}
