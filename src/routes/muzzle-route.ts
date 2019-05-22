@@ -2,6 +2,7 @@ import { WebClient } from "@slack/web-api";
 import express, { Request, Response, Router } from "express";
 import {
   ISlackDeleteMessageRequest,
+  ISlackEventRequest,
   ISlackPostMessageRequest
 } from "../shared/models/models";
 import {
@@ -16,26 +17,27 @@ const muzzleToken: any = process.env.muzzleBotToken;
 const web: WebClient = new WebClient(muzzleToken);
 
 muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
-  if (isMuzzled(req.body.event.user)) {
-    console.log(`${req.body.event.user} is muzzled! Suppressing his voice...`);
+  const request: ISlackEventRequest = req.body;
+  if (isMuzzled(request.event.user)) {
+    console.log(`${request.event.user} is muzzled! Suppressing his voice...`);
     const deleteRequest: ISlackDeleteMessageRequest = {
       token: muzzleToken,
-      channel: req.body.event.channel,
-      ts: req.body.event.ts,
+      channel: request.event.channel,
+      ts: request.event.ts,
       as_user: true
     };
 
     const postRequest: ISlackPostMessageRequest = {
       token: muzzleToken,
-      channel: req.body.event.channel,
-      text: `<@${req.body.event.user}> says "${muzzle(req.body.event.text)}"`
+      channel: request.event.channel,
+      text: `<@${request.event.user}> says "${muzzle(request.event.text)}"`
     };
 
     web.chat.delete(deleteRequest).catch(e => console.error(e));
 
     web.chat.postMessage(postRequest).catch(e => console.error(e));
   }
-  res.send({ challenge: req.body.challenge });
+  res.send({ challenge: request.challenge });
 });
 
 muzzleRoutes.post("/muzzle", (req: Request, res: Response) => {

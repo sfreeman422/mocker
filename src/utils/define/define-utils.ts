@@ -1,6 +1,6 @@
 import Axios, { AxiosResponse } from "axios";
 import {
-  IFormattedUrbanDictionaryDefinitionResponse,
+  IFormattedDefinition,
   IUrbanDictionaryDefinition,
   IUrbanDictionaryResponse
 } from "../../shared/models/models";
@@ -34,7 +34,7 @@ export function formatDefs(defArr: IUrbanDictionaryDefinition[], maxDefs = 3) {
     return [{ text: "Sorry, no definitions found." }];
   }
 
-  const formattedArr: IFormattedUrbanDictionaryDefinitionResponse[] = [];
+  const formattedArr: IFormattedDefinition[] = [];
   const maxDefinitions: number =
     defArr.length <= maxDefs ? defArr.length : maxDefs;
 

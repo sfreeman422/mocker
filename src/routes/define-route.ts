@@ -1,6 +1,7 @@
 import express, { Request, Response, Router } from "express";
 import {
   ISlackChannelResponse,
+  ISlashCommandRequest,
   IUrbanDictionaryResponse
 } from "../shared/models/models";
 import {
@@ -14,12 +15,12 @@ import { sendResponse } from "../utils/slack/slack-utils";
 export const defineRoutes: Router = express.Router();
 
 defineRoutes.post("/define", async (req: Request, res: Response) => {
-  const word: string = req.body.text;
+  const request: ISlashCommandRequest = req.body;
   try {
-    const defined: IUrbanDictionaryResponse = await define(word);
+    const defined: IUrbanDictionaryResponse = await define(request.text);
     const response: ISlackChannelResponse = {
       response_type: "in_channel",
-      text: `*${capitalizeFirstLetter(req.body.text)}*`,
+      text: `*${capitalizeFirstLetter(request.text)}*`,
       attachments: formatDefs(defined.list)
     };
 

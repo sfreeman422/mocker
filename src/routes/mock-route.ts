@@ -1,5 +1,8 @@
 import express, { Router } from "express";
-import { ISlackChannelResponse } from "../shared/models/models";
+import {
+  ISlackChannelResponse,
+  ISlashCommandRequest
+} from "../shared/models/models";
 import { mock } from "../utils/mock/mock-utils";
 import { isMuzzled } from "../utils/muzzle/muzzle-utils";
 import { sendResponse } from "../utils/slack/slack-utils";
@@ -7,7 +10,8 @@ import { sendResponse } from "../utils/slack/slack-utils";
 export const mockRoutes: Router = express.Router();
 
 mockRoutes.post("/mock", (req, res) => {
-  const mocked: string = mock(req.body.text);
+  const request: ISlashCommandRequest = req.body;
+  const mocked: string = mock(request.text);
   const response: ISlackChannelResponse = {
     attachments: [
       {
@@ -15,12 +19,12 @@ mockRoutes.post("/mock", (req, res) => {
       }
     ],
     response_type: "in_channel",
-    text: `<@${req.body.user_id}>`
+    text: `<@${request.user_id}>`
   };
-  if (!isMuzzled(req.body.user_id)) {
-    sendResponse(req.body.response_url, response);
+  if (!isMuzzled(request.user_id)) {
+    sendResponse(request.response_url, response);
     res.status(200).send();
-  } else if (isMuzzled(req.body.user_id)) {
+  } else if (isMuzzled(request.user_id)) {
     res.send(`Sorry, can't do that while muzzled.`);
   }
 });

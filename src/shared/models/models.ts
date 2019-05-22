@@ -5,11 +5,10 @@ export interface IUrbanDictionaryResponse {
 export interface ISlackChannelResponse {
   response_type: string;
   text: string;
-  attachments: IFormattedUrbanDictionaryDefinitionResponse[];
+  attachments: IFormattedDefinition[];
 }
 
-// Horrible name.
-export interface IFormattedUrbanDictionaryDefinitionResponse {
+export interface IFormattedDefinition {
   text: string;
 }
 
@@ -37,5 +36,23 @@ export interface ISlackDeleteMessageRequest {
 export interface ISlackPostMessageRequest {
   token: string;
   channel: string;
+  text: string;
+}
+
+export interface ISlashCommandRequest {
+  text: string;
+  user_id: string;
+  response_url: string;
+}
+
+export interface ISlackEventRequest {
+  challenge: string;
+  event: ISlackEvent;
+}
+
+export interface ISlackEvent {
+  user: string;
+  channel: string;
+  ts: string;
   text: string;
 }
