@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ISlackChannelResponse } from "../shared/models/models";
+import { ISlackChannelResponse } from "../../shared/models/models";
 
 export function sendResponse(
   responseUrl: string,
@@ -13,4 +13,12 @@ export function sendResponse(
     .catch((e: Error) =>
       console.error(`Error responding: ${e.message} at ${responseUrl}`)
     );
+}
+
+export function getUserName(user: string): string {
+  return user.slice(user.indexOf("|") + 1, user.length - 1);
+}
+
+export function getUserId(user: string): string {
+  return user.slice(2, user.indexOf("|"));
 }

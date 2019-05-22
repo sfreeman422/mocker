@@ -2,7 +2,7 @@ import express, { Router } from "express";
 import { ISlackChannelResponse } from "../shared/models/models";
 import { mock } from "../utils/mock/mock-utils";
 import { isMuzzled } from "../utils/muzzle/muzzle-utils";
-import { sendResponse } from "../utils/sendResponse";
+import { sendResponse } from "../utils/slack/slack-utils";
 
 export const mockRoutes: Router = express.Router();
 

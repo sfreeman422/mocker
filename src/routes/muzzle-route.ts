@@ -4,13 +4,12 @@ import {
   ISlackDeleteMessageRequest,
   ISlackPostMessageRequest
 } from "../shared/models/models";
-import { getUserId } from "../utils/getUserId";
-import { getUserName } from "../utils/getUserName";
 import {
   addUserToMuzzled,
   isMuzzled,
   muzzle
 } from "../utils/muzzle/muzzle-utils";
+import { getUserId, getUserName } from "../utils/slack/slack-utils";
 
 export const muzzleRoutes: Router = express.Router();
 const muzzleToken: any = process.env.muzzleBotToken;
