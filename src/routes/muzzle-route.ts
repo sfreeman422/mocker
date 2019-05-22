@@ -42,8 +42,8 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
 
 muzzleRoutes.post("/muzzle", (req: Request, res: Response) => {
   const request: IEventRequest = req.body;
-  const userId: string = getUserId(request.event.text);
-  const userName: string = getUserName(request.event.text);
+  const userId: string = getUserId(request.text);
+  const userName: string = getUserName(request.text);
   try {
     res.send(addUserToMuzzled(userId, userName, request.user_name));
   } catch (e) {

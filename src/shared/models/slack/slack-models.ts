@@ -27,6 +27,7 @@ export interface IEventRequest {
   challenge: string;
   user_name: string;
   event: IEvent;
+  text: string;
 }
 
 export interface IEvent {
