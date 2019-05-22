@@ -1,5 +1,5 @@
 // Store for the muzzled users.
-const muzzled: string[] = [];
+export const muzzled: string[] = [];
 
 /**
  * Takes in text and randomly muzzles certain words.
