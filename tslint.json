@@ -11,6 +11,6 @@
     "no-implicit-dependencies": [true, "dev"]
   },
   "linterOptions": {
-    "exclude": ["./*.json"]
+    "exclude": ["./*.json", "./*.md"]
   }
 }
