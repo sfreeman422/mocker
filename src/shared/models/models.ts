@@ -1,19 +1,19 @@
-export interface UrbanDictionaryResponse {
-  list: UrbanDictionaryDefinition[];
+export interface IUrbanDictionaryResponse {
+  list: IUrbanDictionaryDefinition[];
 }
 
-export interface SlackChannelResponse {
+export interface ISlackChannelResponse {
   response_type: string;
   text: string;
-  attachments: FormattedUrbanDictionaryDefinitionResponse[];
+  attachments: IFormattedUrbanDictionaryDefinitionResponse[];
 }
 
 // Horrible name.
-export interface FormattedUrbanDictionaryDefinitionResponse {
+export interface IFormattedUrbanDictionaryDefinitionResponse {
   text: string;
 }
 
-export interface UrbanDictionaryDefinition {
+export interface IUrbanDictionaryDefinition {
   definition: string;
   permalink: string;
   thumbs_up: number;
@@ -27,14 +27,14 @@ export interface UrbanDictionaryDefinition {
   sound_urls?: any[];
 }
 
-export interface SlackDeleteMessageRequest {
+export interface ISlackDeleteMessageRequest {
   token: string;
   channel: string;
   ts: string;
   as_user: boolean;
 }
 
-export interface SlackPostMessageRequest {
+export interface ISlackPostMessageRequest {
   token: string;
   channel: string;
   text: string;

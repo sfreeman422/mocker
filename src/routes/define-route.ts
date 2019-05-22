@@ -1,11 +1,11 @@
-import express, { Router, Request, Response } from "express";
+import express, { Request, Response, Router } from "express";
 import {
-  SlackChannelResponse,
-  UrbanDictionaryResponse
+  ISlackChannelResponse,
+  IUrbanDictionaryResponse
 } from "../shared/models/models";
 import {
-  define,
   capitalizeFirstLetter,
+  define,
   formatDefs
 } from "../utils/define/define-utils";
 import { isMuzzled } from "../utils/muzzle/muzzle-utils";
@@ -16,8 +16,8 @@ export const defineRoutes: Router = express.Router();
 defineRoutes.post("/define", async (req: Request, res: Response) => {
   const word: string = req.body.text;
   try {
-    const defined: UrbanDictionaryResponse = await define(word);
-    const response: SlackChannelResponse = {
+    const defined: IUrbanDictionaryResponse = await define(word);
+    const response: ISlackChannelResponse = {
       response_type: "in_channel",
       text: `*${capitalizeFirstLetter(req.body.text)}*`,
       attachments: formatDefs(defined.list)

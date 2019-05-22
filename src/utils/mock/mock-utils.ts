@@ -4,13 +4,13 @@ export function mock(input: string): string {
     return input;
   } else {
     let shouldChangeCase = true;
-    for (let i = 0; i < input.length; i++) {
-      if (input[i] === " ") {
-        output += input[i];
+    for (const letter of input) {
+      if (letter === " ") {
+        output += letter;
       } else {
         output += shouldChangeCase
-          ? input[i].toLowerCase()
-          : input[i].toUpperCase();
+          ? letter.toLowerCase()
+          : letter.toUpperCase();
         shouldChangeCase = !shouldChangeCase;
       }
     }

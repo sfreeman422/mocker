@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { SlackChannelResponse } from "../shared/models/models";
+import { ISlackChannelResponse } from "../shared/models/models";
 import { mock } from "../utils/mock/mock-utils";
 import { isMuzzled } from "../utils/muzzle/muzzle-utils";
 import { sendResponse } from "../utils/sendResponse";
@@ -8,14 +8,14 @@ export const mockRoutes: Router = express.Router();
 
 mockRoutes.post("/mock", (req, res) => {
   const mocked: string = mock(req.body.text);
-  const response: SlackChannelResponse = {
-    response_type: "in_channel",
-    text: `<@${req.body.user_id}>`,
+  const response: ISlackChannelResponse = {
     attachments: [
       {
         text: mocked
       }
-    ]
+    ],
+    response_type: "in_channel",
+    text: `<@${req.body.user_id}>`
   };
   if (!isMuzzled(req.body.user_id)) {
     sendResponse(req.body.response_url, response);

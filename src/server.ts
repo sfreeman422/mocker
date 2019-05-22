@@ -1,9 +1,8 @@
-import { Application } from "express";
-import express from "express";
 import bodyParser from "body-parser";
+import express, { Application } from "express";
+import { defineRoutes } from "./routes/define-route";
 import { mockRoutes } from "./routes/mock-route";
 import { muzzleRoutes } from "./routes/muzzle-route";
-import { defineRoutes } from "./routes/define-route";
 
 const app: Application = express();
 const PORT: number = 3000;

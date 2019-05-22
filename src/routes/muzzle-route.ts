@@ -1,16 +1,16 @@
-import express, { Router, Request, Response } from "express";
 import { WebClient } from "@slack/web-api";
+import express, { Request, Response, Router } from "express";
+import {
+  ISlackDeleteMessageRequest,
+  ISlackPostMessageRequest
+} from "../shared/models/models";
+import { getUserId } from "../utils/getUserId";
+import { getUserName } from "../utils/getUserName";
 import {
   addUserToMuzzled,
   isMuzzled,
   muzzle
 } from "../utils/muzzle/muzzle-utils";
-import { getUserName } from "../utils/getUserName";
-import { getUserId } from "../utils/getUserId";
-import {
-  SlackDeleteMessageRequest,
-  SlackPostMessageRequest
-} from "../shared/models/models";
 
 export const muzzleRoutes: Router = express.Router();
 const muzzleToken: any = process.env.muzzleBotToken;
@@ -19,14 +19,14 @@ const web: WebClient = new WebClient(muzzleToken);
 muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
   if (isMuzzled(req.body.event.user)) {
     console.log(`${req.body.event.user} is muzzled! Suppressing his voice...`);
-    const deleteRequest: SlackDeleteMessageRequest = {
+    const deleteRequest: ISlackDeleteMessageRequest = {
       token: muzzleToken,
       channel: req.body.event.channel,
       ts: req.body.event.ts,
       as_user: true
     };
 
-    const postRequest: SlackPostMessageRequest = {
+    const postRequest: ISlackPostMessageRequest = {
       token: muzzleToken,
       channel: req.body.event.channel,
       text: `<@${req.body.event.user}> says "${muzzle(req.body.event.text)}"`

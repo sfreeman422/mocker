@@ -1,10 +1,9 @@
-import { SlackChannelResponse } from "../shared/models/models";
-
-const axios = require("axios");
+import axios from "axios";
+import { ISlackChannelResponse } from "../shared/models/models";
 
 export function sendResponse(
   responseUrl: string,
-  response: SlackChannelResponse
+  response: ISlackChannelResponse
 ): void {
   axios
     .post(responseUrl, response)

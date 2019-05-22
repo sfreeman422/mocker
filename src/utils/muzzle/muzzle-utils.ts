@@ -7,8 +7,8 @@ const muzzled: string[] = [];
 export function muzzle(text: string) {
   let returnText = "";
   const words = text.split(" ");
-  for (let i = 0; i < words.length; i++) {
-    returnText += isRandomEven() ? ` *${words[i]}* ` : " ..mMm.. ";
+  for (const word of words) {
+    returnText += isRandomEven() ? ` *${word}* ` : " ..mMm.. ";
   }
   return returnText;
 }
@@ -48,7 +48,7 @@ export function addUserToMuzzled(
     );
     setTimeout(() => removeMuzzle(toMuzzle), timeToMuzzle);
     return `Succesfully muzzled ${friendlyMuzzle} for ${
-      +seconds == 60
+      +seconds === 60
         ? minutes + 1 + "m00s"
         : minutes + "m" + (+seconds < 10 ? "0" : "") + seconds + "s"
     } minutes`;

@@ -1,8 +1,8 @@
 import Axios, { AxiosResponse } from "axios";
 import {
-  UrbanDictionaryResponse,
-  UrbanDictionaryDefinition,
-  FormattedUrbanDictionaryDefinitionResponse
+  IFormattedUrbanDictionaryDefinitionResponse,
+  IUrbanDictionaryDefinition,
+  IUrbanDictionaryResponse
 } from "../../shared/models/models";
 
 /**
@@ -15,9 +15,9 @@ export function capitalizeFirstLetter(sentence: string): string {
 /**
  * Returns a promise to look up a definition on urban dictionary.
  */
-export function define(word: string): Promise<UrbanDictionaryResponse> {
+export function define(word: string): Promise<IUrbanDictionaryResponse> {
   return Axios.get(`http://api.urbandictionary.com/v0/define?term=${word}`)
-    .then((res: AxiosResponse<UrbanDictionaryResponse>) => {
+    .then((res: AxiosResponse<IUrbanDictionaryResponse>) => {
       return res.data;
     })
     .catch(e => {
@@ -29,12 +29,12 @@ export function define(word: string): Promise<UrbanDictionaryResponse> {
 /**
  * Takes in an array of definitions and breaks them down into a shortened list depending on maxDefs
  */
-export function formatDefs(defArr: UrbanDictionaryDefinition[], maxDefs = 3) {
+export function formatDefs(defArr: IUrbanDictionaryDefinition[], maxDefs = 3) {
   if (!defArr || defArr.length === 0) {
     return [{ text: "Sorry, no definitions found." }];
   }
 
-  const formattedArr: FormattedUrbanDictionaryDefinitionResponse[] = [];
+  const formattedArr: IFormattedUrbanDictionaryDefinitionResponse[] = [];
   const maxDefinitions: number =
     defArr.length <= maxDefs ? defArr.length : maxDefs;
 
@@ -53,9 +53,9 @@ export function formatDefs(defArr: UrbanDictionaryDefinition[], maxDefs = 3) {
  */
 export function formatUrbanD(definition: string): string {
   let formattedDefinition: string = "";
-  for (let i = 0; i < definition.length; i++) {
-    if (definition[i] !== "[" || definition[i] !== "]") {
-      formattedDefinition += definition[i];
+  for (const letter of definition) {
+    if (letter !== "[" && letter !== "]") {
+      formattedDefinition += letter;
     }
   }
   return formattedDefinition;
