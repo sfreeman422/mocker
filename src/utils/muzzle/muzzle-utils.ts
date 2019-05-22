@@ -1,40 +1,33 @@
 // Store for the muzzled users.
-const muzzled = [];
+export const muzzled: string[] = [];
 
 /**
  * Takes in text and randomly muzzles certain words.
- *
- * @param {string} text
- * @returns
  */
-function muzzle(text) {
+export function muzzle(text: string) {
   let returnText = "";
   const words = text.split(" ");
-  for (let i = 0; i < words.length; i++) {
-    returnText += this.isRandomEven() ? ` *${words[i]}* ` : " ..mMm.. ";
+  for (const word of words) {
+    returnText += isRandomEven() ? ` *${word}* ` : " ..mMm.. ";
   }
   return returnText;
 }
 
 /**
  * Tells whether or not a user has been added to the muzzled arary
- *
- * @param {*} user - a user
- * @returns
  */
-function isMuzzled(user) {
+export function isMuzzled(user: string) {
   return muzzled.includes(user);
 }
 
 /**
  * Adds a user to the muzzled array and sets a timeout to remove the muzzle within a random time of 30 seconds to 3 minutes
- *
- * @param {*} toMuzzle
- * @param {*} friendlyMuzzle
- * @param {*} requestor
- * @returns
  */
-function addUserToMuzzled(toMuzzle, friendlyMuzzle, requestor) {
+export function addUserToMuzzled(
+  toMuzzle: string,
+  friendlyMuzzle: string,
+  requestor: string
+) {
   const timeToMuzzle = Math.floor(Math.random() * (180000 - 30000 + 1) + 30000);
   const minutes = Math.floor(timeToMuzzle / 60000);
   const seconds = ((timeToMuzzle % 60000) / 1000).toFixed(0);
@@ -55,25 +48,18 @@ function addUserToMuzzled(toMuzzle, friendlyMuzzle, requestor) {
     );
     setTimeout(() => removeMuzzle(toMuzzle), timeToMuzzle);
     return `Succesfully muzzled ${friendlyMuzzle} for ${
-      seconds == 60
+      +seconds === 60
         ? minutes + 1 + "m00s"
-        : minutes + "m" + (seconds < 10 ? "0" : "") + seconds + "s"
+        : minutes + "m" + (+seconds < 10 ? "0" : "") + seconds + "s"
     } minutes`;
   }
 }
 
-function removeMuzzle(user) {
+export function removeMuzzle(user: string) {
   muzzled.splice(muzzled.indexOf(user), 1);
   console.log(`Removed ${user}'s muzzle! He is free at last.`);
 }
 
-function isRandomEven() {
+export function isRandomEven() {
   return Math.floor(Math.random() * 2) % 2 === 0;
 }
-
-exports.muzzle = muzzle;
-exports.muzzled = muzzled;
-exports.isRandomEven = isRandomEven;
-exports.isMuzzled = isMuzzled;
-exports.removeMuzzle = removeMuzzle;
-exports.addUserToMuzzled = addUserToMuzzled;

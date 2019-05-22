@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const { mock } = require("./mock-utils");
+import { expect } from "chai";
+import { mock } from "./mock-utils";
 
 describe("mock-utils", () => {
   describe("mock()", () => {
@@ -15,10 +15,6 @@ describe("mock-utils", () => {
 
     it("should return input if it is an empty string", () => {
       expect(mock("")).to.equal("");
-    });
-
-    it("should return undefined if no parameter was passed in", () => {
-      expect(mock()).to.equal(undefined);
     });
   });
 });
