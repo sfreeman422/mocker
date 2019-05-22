@@ -1,8 +1,8 @@
 import express, { Router } from "express";
 import {
-  ISlackChannelResponse,
+  IChannelResponse,
   ISlashCommandRequest
-} from "../shared/models/models";
+} from "../shared/models/slack/slack-models";
 import { mock } from "../utils/mock/mock-utils";
 import { isMuzzled } from "../utils/muzzle/muzzle-utils";
 import { sendResponse } from "../utils/slack/slack-utils";
@@ -12,7 +12,7 @@ export const mockRoutes: Router = express.Router();
 mockRoutes.post("/mock", (req, res) => {
   const request: ISlashCommandRequest = req.body;
   const mocked: string = mock(request.text);
-  const response: ISlackChannelResponse = {
+  const response: IChannelResponse = {
     attachments: [
       {
         text: mocked

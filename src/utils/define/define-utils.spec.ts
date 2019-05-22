@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { IUrbanDictionaryDefinition } from "../../shared/models/models";
+import { IDefinition } from "../../shared/models/define/define-models";
 import {
   capitalizeFirstLetter,
   define,
@@ -40,12 +40,12 @@ describe("define-utils", () => {
 
   describe("formatUrbanD()", () => {
     it("should return a formatted urbandictionary string", () => {
-      expect(formatUrbanD("A [way] to [test]")).to.equal("A *way* to *test*");
+      expect(formatUrbanD("A [way] to [test]")).to.equal("A way to test");
     });
   });
 });
 
-const testArray: IUrbanDictionaryDefinition[] = [
+const testArray: IDefinition[] = [
   {
     definition: "one",
     permalink: "https://urbandictionary.com/whatever",

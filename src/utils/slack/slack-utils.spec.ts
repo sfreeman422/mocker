@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { getUserId, getUserName } from "./slack-utils";
 
-const mockSlackIdString = "<@jrjrjr|U12345678>";
+const mockSlackIdString = "<@U12345678|jrjrjr>";
 describe("slack-utils", () => {
   describe("getUserName()", () => {
     it("should return the username from a slack formatted id string", () => {

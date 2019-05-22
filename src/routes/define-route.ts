@@ -1,9 +1,9 @@
 import express, { Request, Response, Router } from "express";
+import { IUrbanDictionaryResponse } from "../shared/models/define/define-models";
 import {
-  ISlackChannelResponse,
-  ISlashCommandRequest,
-  IUrbanDictionaryResponse
-} from "../shared/models/models";
+  IChannelResponse,
+  ISlashCommandRequest
+} from "../shared/models/slack/slack-models";
 import {
   capitalizeFirstLetter,
   define,
@@ -18,16 +18,16 @@ defineRoutes.post("/define", async (req: Request, res: Response) => {
   const request: ISlashCommandRequest = req.body;
   try {
     const defined: IUrbanDictionaryResponse = await define(request.text);
-    const response: ISlackChannelResponse = {
+    const response: IChannelResponse = {
       response_type: "in_channel",
       text: `*${capitalizeFirstLetter(request.text)}*`,
       attachments: formatDefs(defined.list)
     };
 
-    if (!isMuzzled(req.body.user_id)) {
-      sendResponse(req.body.response_url, response);
+    if (!isMuzzled(request.user_id)) {
+      sendResponse(request.response_url, response);
       res.status(200).send();
-    } else if (isMuzzled(req.body.user_id)) {
+    } else if (isMuzzled(request.user_id)) {
       res.send(`Sorry, can't do that while muzzled.`);
     }
   } catch (e) {

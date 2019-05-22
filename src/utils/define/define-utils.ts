@@ -1,10 +1,9 @@
 import Axios, { AxiosResponse } from "axios";
 import {
-  IFormattedDefinition,
-  IUrbanDictionaryDefinition,
+  IDefinition,
   IUrbanDictionaryResponse
-} from "../../shared/models/models";
-
+} from "../../shared/models/define/define-models";
+import { IAttachment } from "../../shared/models/slack/slack-models";
 /**
  * Capitalizes the first letter of a given sentence.
  */
@@ -29,12 +28,12 @@ export function define(word: string): Promise<IUrbanDictionaryResponse> {
 /**
  * Takes in an array of definitions and breaks them down into a shortened list depending on maxDefs
  */
-export function formatDefs(defArr: IUrbanDictionaryDefinition[], maxDefs = 3) {
+export function formatDefs(defArr: IDefinition[], maxDefs = 3) {
   if (!defArr || defArr.length === 0) {
     return [{ text: "Sorry, no definitions found." }];
   }
 
-  const formattedArr: IFormattedDefinition[] = [];
+  const formattedArr: IAttachment[] = [];
   const maxDefinitions: number =
     defArr.length <= maxDefs ? defArr.length : maxDefs;
 
