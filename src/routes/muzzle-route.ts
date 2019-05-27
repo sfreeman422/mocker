@@ -39,14 +39,16 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
 
     web.chat.postMessage(postRequest).catch(e => console.error(e));
   }
-  const userIds: UsersIdentityArguments = {
+  const identityRequest: UsersIdentityArguments = {
     token: muzzleToken,
     user: request.event.user
   };
 
   web.users.profile
-    .get(userIds)
-    .then(profile => console.log("user profile", profile))
+    .get(identityRequest)
+    .then(() =>
+      console.log("Added user profile to DB for: ", request.event.user)
+    )
     .catch(err =>
       console.error(
         "Could not retrieve user profile for ",
