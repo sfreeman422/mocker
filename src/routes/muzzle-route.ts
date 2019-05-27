@@ -44,8 +44,17 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
     user: request.event.user
   };
 
-  const infoAboutId = web.users.profile.get(userIds);
-  console.log(infoAboutId);
+  web.users.profile
+    .get(userIds)
+    .then(profile => console.log("user profile", profile))
+    .catch(err =>
+      console.error(
+        "Could not retrieve user profile for ",
+        request.event.user,
+        "error: ",
+        err
+      )
+    );
   res.send({ challenge: request.challenge });
 });
 
