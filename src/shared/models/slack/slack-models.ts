@@ -57,6 +57,44 @@ export interface IEvent {
   deleted_ts?: string;
 }
 
+export interface IUser {
+  ok: boolean;
+  profile: IUserProfile;
+  response_metadata: IResponseMetaData;
+}
+
+export interface IUserProfile {
+  title: string;
+  phone: string;
+  skype: string;
+  real_name: string;
+  real_name_normalized: string;
+  display_name: string;
+  display_name_normalized: string;
+  fields: any[];
+  status_text: string;
+  status_emoji: string;
+  status_expiration: number;
+  avatar_hash: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  image_original: string;
+  image_24: string;
+  image_32: string;
+  image_48: string;
+  image_72: string;
+  image_192: string;
+  image_512: string;
+  image_1024: string;
+  status_text_canonical: string;
+}
+
+export interface IResponseMetaData {
+  scopes: string[];
+  acceptedScopes: string[];
+}
+
 export interface IAttachment {
   text: string;
 }
