@@ -18,6 +18,7 @@ const web: WebClient = new WebClient(muzzleToken);
 
 muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
   const request: IEventRequest = req.body;
+  console.log(request);
   if (isMuzzled(request.event.user)) {
     console.log(`${request.event.user} is muzzled! Suppressing his voice...`);
     const deleteRequest: IDeleteMessageRequest = {
