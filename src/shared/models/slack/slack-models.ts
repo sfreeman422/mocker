@@ -25,16 +25,25 @@ export interface ISlashCommandRequest {
 
 export interface IEventRequest {
   challenge: string;
-  user_name: string;
+  token: string;
+  team_id: string;
+  api_app_id: string;
   event: IEvent;
-  text: string;
+  type: string;
+  event_id: string;
+  event_time: number;
+  authed_users: string[];
 }
 
 export interface IEvent {
-  user: string;
-  channel: string;
-  ts: string;
+  client_msg_id: string;
+  type: string; // Is there more specific types?
   text: string;
+  user: string;
+  ts: string;
+  channel: string;
+  event_ts: string;
+  channel_type: string;
 }
 
 export interface IAttachment {

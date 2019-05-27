@@ -3,7 +3,8 @@ import express, { Request, Response, Router } from "express";
 import {
   IDeleteMessageRequest,
   IEventRequest,
-  IPostMessageRequest
+  IPostMessageRequest,
+  ISlashCommandRequest
 } from "../shared/models/slack/slack-models";
 import {
   addUserToMuzzled,
@@ -42,11 +43,11 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
 });
 
 muzzleRoutes.post("/muzzle", (req: Request, res: Response) => {
-  const request: IEventRequest = req.body;
+  const request: ISlashCommandRequest = req.body;
   const userId: string = getUserId(request.text);
   const userName: string = getUserName(request.text);
   try {
-    res.send(addUserToMuzzled(userId, userName, request.user_name));
+    res.send(addUserToMuzzled(userId, userName, request.user_id));
   } catch (e) {
     res.send(e.message);
   }
