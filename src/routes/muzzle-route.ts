@@ -1,4 +1,4 @@
-import { WebClient } from "@slack/web-api";
+import { UsersIdentityArguments, WebClient } from "@slack/web-api";
 import express, { Request, Response, Router } from "express";
 import {
   IDeleteMessageRequest,
@@ -39,6 +39,13 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
 
     web.chat.postMessage(postRequest).catch(e => console.error(e));
   }
+  const userIds: UsersIdentityArguments = {
+    token: muzzleToken,
+    user: request.event.user
+  };
+
+  const infoAboutId = web.users.profile.get(userIds);
+  console.log(infoAboutId);
   res.send({ challenge: request.challenge });
 });
 

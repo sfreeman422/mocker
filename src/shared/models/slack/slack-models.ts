@@ -18,9 +18,17 @@ export interface IPostMessageRequest {
 }
 
 export interface ISlashCommandRequest {
-  text: string;
+  token: string;
+  team_id: string;
+  team_domain: string;
+  channel_id: string;
+  channel_name: string;
   user_id: string;
+  user_name: string;
+  command: string;
+  text: string;
   response_url: string;
+  trigger_id: string;
 }
 
 export interface IEventRequest {
@@ -44,6 +52,9 @@ export interface IEvent {
   channel: string;
   event_ts: string;
   channel_type: string;
+  subtype?: string; // message_deleted
+  hidden?: boolean;
+  deleted_ts?: string;
 }
 
 export interface IAttachment {
