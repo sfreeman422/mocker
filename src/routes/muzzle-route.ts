@@ -44,6 +44,7 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
 
 muzzleRoutes.post("/muzzle", (req: Request, res: Response) => {
   const request: ISlashCommandRequest = req.body;
+  console.log(request);
   const userId: string = getUserId(request.text);
   const userName: string = getUserName(request.text);
   try {
