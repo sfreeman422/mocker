@@ -46,7 +46,6 @@ muzzleRoutes.post("/muzzle", (req: Request, res: Response) => {
   const request: ISlashCommandRequest = req.body;
   const userId: string = getUserId(request.text);
   const userName: string = getUserName(request.text);
-  console.log(request);
   try {
     res.send(addUserToMuzzled(userId, userName, request.user_id));
   } catch (e) {
