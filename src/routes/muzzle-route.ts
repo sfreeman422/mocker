@@ -18,7 +18,7 @@ import { getUserId, getUserName } from "../utils/slack/slack-utils";
 export const muzzleRoutes: Router = express.Router();
 const muzzleToken: any = process.env.muzzleBotToken;
 const web: WebClient = new WebClient(muzzleToken);
-const MAX_SUPPRESSIONS: number = 10;
+const MAX_SUPPRESSIONS: number = 7;
 
 muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
   const request: IEventRequest = req.body;
@@ -34,7 +34,7 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
 
     web.chat.delete(deleteRequest).catch(e => console.error(e));
 
-    if (muzzled.get(request.event.user)!.suppressionCount <= MAX_SUPPRESSIONS) {
+    if (muzzled.get(request.event.user)!.suppressionCount < MAX_SUPPRESSIONS) {
       muzzled.set(request.event.user, {
         suppressionCount: ++muzzled.get(request.event.user)!.suppressionCount,
         muzzledBy: muzzled.get(request.event.user)!.muzzledBy
