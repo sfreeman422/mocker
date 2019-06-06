@@ -42,7 +42,7 @@ describe("muzzle-utils", () => {
             testData.friendlyName,
             testData.requestor
           )
-        ).to.throw();
+        ).to.throw(`${testData.friendlyName} is already muzzled!`);
       });
 
       it("should throw an error if a requestor tries to muzzle someone while the requestor is muzzled", () => {
@@ -53,7 +53,7 @@ describe("muzzle-utils", () => {
             testData.friendlyName,
             testData.user
           )
-        ).to.throw();
+        ).to.throw(`You can't muzzle someone if you are already muzzled!`);
       });
     });
 

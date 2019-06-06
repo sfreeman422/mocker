@@ -8,8 +8,8 @@ import {
 } from "../shared/models/slack/slack-models";
 import {
   addUserToMuzzled,
-  isMuzzled,
-  muzzle
+  muzzle,
+  muzzled
 } from "../utils/muzzle/muzzle-utils";
 import { getUserId, getUserName } from "../utils/slack/slack-utils";
 
@@ -20,7 +20,7 @@ const web: WebClient = new WebClient(muzzleToken);
 muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
   const request: IEventRequest = req.body;
   console.log(request);
-  if (isMuzzled(request.event.user)) {
+  if (muzzled.has(request.event.user)) {
     console.log(`${request.event.user} is muzzled! Suppressing his voice...`);
     const deleteRequest: IDeleteMessageRequest = {
       token: muzzleToken,
