@@ -1,9 +1,11 @@
-import { WebClient } from "@slack/web-api";
+import {
+  ChatDeleteArguments,
+  ChatPostMessageArguments,
+  WebClient
+} from "@slack/web-api";
 import express, { Request, Response, Router } from "express";
 import {
-  IDeleteMessageRequest,
   IEventRequest,
-  IPostMessageRequest,
   ISlashCommandRequest
 } from "../shared/models/slack/slack-models";
 import {
@@ -22,22 +24,23 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
   console.log(request);
   if (muzzled.has(request.event.user)) {
     console.log(`${request.event.user} is muzzled! Suppressing his voice...`);
-    const deleteRequest: IDeleteMessageRequest = {
+    const deleteRequest: ChatDeleteArguments = {
       token: muzzleToken,
       channel: request.event.channel,
       ts: request.event.ts,
       as_user: true
     };
 
-    const postRequest: IPostMessageRequest = {
-      token: muzzleToken,
-      channel: request.event.channel,
-      text: `<@${request.event.user}> says "${muzzle(request.event.text)}"`
-    };
-
     web.chat.delete(deleteRequest).catch(e => console.error(e));
 
-    web.chat.postMessage(postRequest).catch(e => console.error(e));
+    if (muzzled.get(request.event.user)!.suppressionCount < 10) {
+      const postRequest: ChatPostMessageArguments = {
+        token: muzzleToken,
+        channel: request.event.channel,
+        text: `<@${request.event.user}> says "${muzzle(request.event.text)}"`
+      };
+      web.chat.postMessage(postRequest).catch(e => console.error(e));
+    }
   }
   res.send({ challenge: request.challenge });
 });

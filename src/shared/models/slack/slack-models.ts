@@ -4,19 +4,6 @@ export interface IChannelResponse {
   attachments: IAttachment[];
 }
 
-export interface IDeleteMessageRequest {
-  token: string;
-  channel: string;
-  ts: string;
-  as_user: boolean;
-}
-
-export interface IPostMessageRequest {
-  token: string;
-  channel: string;
-  text: string;
-}
-
 export interface ISlashCommandRequest {
   text: string;
   user_id: string;
