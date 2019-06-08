@@ -4,6 +4,10 @@ import { IMuzzled, IMuzzler } from "../../shared/models/muzzle/muzzle-models";
 export const muzzled: Map<string, IMuzzled> = new Map();
 // STore for people who are muzzling others.
 export const muzzlers: Map<string, IMuzzler> = new Map();
+
+// Time period in which a user must wait before making more muzzles.
+const MAX_MUZZLE_TIME = 3600000;
+export const MAX_MUZZLES = 2;
 /**
  * Takes in text and randomly muzzles certain words.
  */
@@ -37,19 +41,33 @@ export function addUserToMuzzled(
       `User: ${requestor} attempted to muzzle ${toMuzzle} but failed because requestor: ${requestor} is currently muzzled`
     );
     throw new Error(`You can't muzzle someone if you are already muzzled!`);
+  } else if (
+    muzzlers.has(requestor) &&
+    muzzlers.get(requestor)!.muzzleCount >= 2
+  ) {
+    console.error(
+      `User: ${requestor} attempted to muzzle ${toMuzzle} but failed because requestor: ${requestor} has reached maximum muzzle of ${MAX_MUZZLES}`
+    );
+    throw new Error(
+      `You're doing that too much. Only ${MAX_MUZZLES} muzzles are allowed per hour.`
+    );
   } else {
     // Add a newly muzzled user.
     muzzled.set(toMuzzle, {
       suppressionCount: 0,
       muzzledBy: requestor
     });
-
+    const muzzleCount = muzzlers.has(requestor)
+      ? ++muzzlers.get(requestor)!.muzzleCount
+      : 1;
     // Add requestor to muzzlers
     muzzlers.set(requestor, {
-      muzzleCount: muzzlers.has(requestor)
-        ? ++muzzlers.get(requestor)!.muzzleCount
-        : 1
+      muzzleCount
     });
+
+    if (muzzleCount === 2) {
+      setTimeout(() => removeMuzzler(requestor), MAX_MUZZLE_TIME);
+    }
 
     console.log(
       `${friendlyMuzzle} is now muzzled for ${timeToMuzzle} milliseconds`
@@ -61,6 +79,13 @@ export function addUserToMuzzled(
         : minutes + "m" + (+seconds < 10 ? "0" : "") + seconds + "s"
     } minutes`;
   }
+}
+
+export function removeMuzzler(user: string) {
+  muzzlers.delete(user);
+  console.log(
+    `${MAX_MUZZLE_TIME} has passed since ${user} last successful muzzle.`
+  );
 }
 
 export function removeMuzzle(user: string) {
