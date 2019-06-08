@@ -63,7 +63,7 @@ export function addUserToMuzzled(
     // Add requestor to muzzlers
     muzzlers.set(requestor, {
       muzzleCount,
-      muzzleCountRemover: window.setTimeout(
+      muzzleCountRemover: setTimeout(
         () => decrementMuzzleCount(requestor),
         MAX_TIME_BETWEEN_MUZZLES
       )
@@ -78,7 +78,7 @@ export function addUserToMuzzled(
       clearTimeout(currentTimer);
       muzzlers.set(requestor, {
         muzzleCount: muzzlers.get(requestor)!.muzzleCount,
-        muzzleCountRemover: window.setTimeout(
+        muzzleCountRemover: setTimeout(
           () =>
             muzzlers.get(requestor)!.muzzleCount === MAX_MUZZLES
               ? removeMuzzler(requestor)
@@ -90,7 +90,7 @@ export function addUserToMuzzled(
     console.log(
       `${friendlyMuzzle} is now muzzled for ${timeToMuzzle} milliseconds`
     );
-    window.setTimeout(() => removeMuzzle(toMuzzle), timeToMuzzle);
+    setTimeout(() => removeMuzzle(toMuzzle), timeToMuzzle);
     return `Succesfully muzzled ${friendlyMuzzle} for ${
       +seconds === 60
         ? minutes + 1 + "m00s"
