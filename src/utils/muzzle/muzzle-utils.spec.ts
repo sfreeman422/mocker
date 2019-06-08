@@ -4,7 +4,8 @@ import {
   MAX_MUZZLES,
   muzzled,
   muzzlers,
-  removeMuzzle
+  removeMuzzle,
+  removeMuzzler
 } from "./muzzle-utils";
 
 describe("muzzle-utils", () => {
@@ -151,6 +152,23 @@ describe("muzzle-utils", () => {
       removeMuzzle(testData.user);
       expect(muzzled.has(testData.user)).to.equal(false);
       expect(muzzled.size).to.equal(0);
+    });
+  });
+
+  describe("removeMuzzler()", () => {
+    it("should remove a user from the muzzler array", () => {
+      addUserToMuzzled(
+        testData.user,
+        testData.friendlyName,
+        testData.requestor
+      );
+      expect(muzzled.size).to.equal(1);
+      expect(muzzled.has(testData.user)).to.equal(true);
+      expect(muzzlers.size).to.equal(1);
+      expect(muzzlers.has(testData.requestor)).to.equal(true);
+      removeMuzzler(testData.requestor);
+      expect(muzzlers.has(testData.requestor)).to.equal(false);
+      expect(muzzlers.size).to.equal(0);
     });
   });
 });

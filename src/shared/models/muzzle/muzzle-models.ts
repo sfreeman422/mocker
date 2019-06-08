@@ -5,4 +5,5 @@ export interface IMuzzled {
 
 export interface IMuzzler {
   muzzleCount: number;
+  muzzleCountRemover?: NodeJS.Timeout;
 }
