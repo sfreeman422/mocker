@@ -73,9 +73,9 @@ export function addUserToMuzzled(
       muzzlers.has(requestor) &&
       muzzlers.get(requestor)!.muzzleCountRemover
     ) {
-      const currentTimer = muzzlers.get(requestor)!
-        .muzzleCountRemover as NodeJS.Timeout;
-      clearTimeout(currentTimer);
+      const currentTimer = muzzlers.get(requestor)!.muzzleCountRemover;
+      clearTimeout(currentTimer as NodeJS.Timeout);
+
       muzzlers.set(requestor, {
         muzzleCount: muzzlers.get(requestor)!.muzzleCount,
         muzzleCountRemover: setTimeout(
@@ -90,7 +90,6 @@ export function addUserToMuzzled(
     console.log(
       `${friendlyMuzzle} is now muzzled for ${timeToMuzzle} milliseconds`
     );
-    setTimeout(() => removeMuzzle(toMuzzle), timeToMuzzle);
     return `Succesfully muzzled ${friendlyMuzzle} for ${
       +seconds === 60
         ? minutes + 1 + "m00s"
@@ -103,7 +102,8 @@ export function decrementMuzzleCount(requestor: string) {
   if (muzzlers.has(requestor)) {
     const decrementedMuzzle = --muzzlers.get(requestor)!.muzzleCount;
     muzzlers.set(requestor, {
-      muzzleCount: decrementedMuzzle
+      muzzleCount: decrementedMuzzle,
+      muzzleCountRemover: muzzlers.get(requestor)!.muzzleCountRemover
     });
     console.log(
       `Successfully decremented ${requestor} muzzleCount to ${decrementedMuzzle}`
