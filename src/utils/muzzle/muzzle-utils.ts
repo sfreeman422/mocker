@@ -1,5 +1,4 @@
 import { IMuzzled, IMuzzler } from "../../shared/models/muzzle/muzzle-models";
-
 // Store for the muzzled users.
 export const muzzled: Map<string, IMuzzled> = new Map();
 // STore for people who are muzzling others.
@@ -64,7 +63,7 @@ export function addUserToMuzzled(
     // Add requestor to muzzlers
     muzzlers.set(requestor, {
       muzzleCount,
-      muzzleCountRemover: window.setTimeout(
+      muzzleCountRemover: setTimeout(
         () => decrementMuzzleCount(requestor),
         MAX_TIME_BETWEEN_MUZZLES
       )
@@ -74,10 +73,12 @@ export function addUserToMuzzled(
       muzzlers.has(requestor) &&
       muzzlers.get(requestor)!.muzzleCountRemover
     ) {
-      window.clearTimeout(muzzlers.get(requestor)!.muzzleCountRemover);
+      const currentTimer = muzzlers.get(requestor)!
+        .muzzleCountRemover as NodeJS.Timeout;
+      clearTimeout(currentTimer);
       muzzlers.set(requestor, {
         muzzleCount: muzzlers.get(requestor)!.muzzleCount,
-        muzzleCountRemover: window.setTimeout(
+        muzzleCountRemover: setTimeout(
           () =>
             muzzlers.get(requestor)!.muzzleCount === MAX_MUZZLES
               ? removeMuzzler(requestor)
@@ -89,7 +90,7 @@ export function addUserToMuzzled(
     console.log(
       `${friendlyMuzzle} is now muzzled for ${timeToMuzzle} milliseconds`
     );
-    window.setTimeout(() => removeMuzzle(toMuzzle), timeToMuzzle);
+    setTimeout(() => removeMuzzle(toMuzzle), timeToMuzzle);
     return `Succesfully muzzled ${friendlyMuzzle} for ${
       +seconds === 60
         ? minutes + 1 + "m00s"
@@ -117,7 +118,7 @@ export function decrementMuzzleCount(requestor: string) {
 export function removeMuzzler(user: string) {
   muzzlers.delete(user);
   console.log(
-    `${MAX_MUZZLE_TIME} has passed since ${user} last successful muzzle. They have been removed.`
+    `${MAX_MUZZLE_TIME} has passed since ${user} last successful muzzle. They have been removed from muzzlers.`
   );
 }
 
