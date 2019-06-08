@@ -7,6 +7,7 @@ export const muzzlers: Map<string, IMuzzler> = new Map();
 
 // Time period in which a user must wait before making more muzzles.
 const MAX_MUZZLE_TIME = 3600000;
+const MAX_TIME_BETWEEN_MUZZLES = 3600000;
 export const MAX_MUZZLES = 2;
 /**
  * Takes in text and randomly muzzles certain words.
@@ -43,7 +44,7 @@ export function addUserToMuzzled(
     throw new Error(`You can't muzzle someone if you are already muzzled!`);
   } else if (
     muzzlers.has(requestor) &&
-    muzzlers.get(requestor)!.muzzleCount >= 2
+    muzzlers.get(requestor)!.muzzleCount === MAX_MUZZLES
   ) {
     console.error(
       `User: ${requestor} attempted to muzzle ${toMuzzle} but failed because requestor: ${requestor} has reached maximum muzzle of ${MAX_MUZZLES}`
@@ -62,13 +63,29 @@ export function addUserToMuzzled(
       : 1;
     // Add requestor to muzzlers
     muzzlers.set(requestor, {
-      muzzleCount
+      muzzleCount,
+      muzzleCountRemover: setTimeout(
+        () => decrementMuzzleCount(requestor),
+        MAX_TIME_BETWEEN_MUZZLES
+      )
     });
 
-    if (muzzleCount === 2) {
-      setTimeout(() => removeMuzzler(requestor), MAX_MUZZLE_TIME);
+    if (
+      muzzlers.has(requestor) &&
+      muzzlers.get(requestor)!.muzzleCountRemover
+    ) {
+      clearTimeout(muzzlers.get(requestor)!.muzzleCountRemover);
+      muzzlers.set(requestor, {
+        muzzleCount: muzzlers.get(requestor)!.muzzleCount,
+        muzzleCountRemover: setTimeout(
+          () =>
+            muzzlers.get(requestor)!.muzzleCount === MAX_MUZZLES
+              ? removeMuzzler(requestor)
+              : decrementMuzzleCount(requestor),
+          MAX_MUZZLE_TIME
+        )
+      });
     }
-
     console.log(
       `${friendlyMuzzle} is now muzzled for ${timeToMuzzle} milliseconds`
     );
@@ -81,10 +98,26 @@ export function addUserToMuzzled(
   }
 }
 
+export function decrementMuzzleCount(requestor: string) {
+  if (muzzlers.has(requestor)) {
+    const decrementedMuzzle = --muzzlers.get(requestor)!.muzzleCount;
+    muzzlers.set(requestor, {
+      muzzleCount: decrementedMuzzle
+    });
+    console.log(
+      `Successfully decremented ${requestor} muzzleCount to ${decrementedMuzzle}`
+    );
+  } else {
+    console.error(
+      `Attemped to decrement muzzle count for ${requestor} but they did not exist!`
+    );
+  }
+}
+
 export function removeMuzzler(user: string) {
   muzzlers.delete(user);
   console.log(
-    `${MAX_MUZZLE_TIME} has passed since ${user} last successful muzzle.`
+    `${MAX_MUZZLE_TIME} has passed since ${user} last successful muzzle. They have been removed.`
   );
 }
 
