@@ -25,10 +25,10 @@ defineRoutes.post("/define", async (req: Request, res: Response) => {
     };
 
     if (muzzled.has(request.user_id)) {
+      res.send(`Sorry, can't do that while muzzled.`);
+    } else {
       sendResponse(request.response_url, response);
       res.status(200).send();
-    } else if (muzzled.has(request.user_id)) {
-      res.send(`Sorry, can't do that while muzzled.`);
     }
   } catch (e) {
     res.send(`error: ${e.message}`);
