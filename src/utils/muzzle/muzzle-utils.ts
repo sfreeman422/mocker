@@ -75,13 +75,13 @@ export function addUserToMuzzled(
     ) {
       const currentTimer = muzzlers.get(requestor)!.muzzleCountRemover;
       clearTimeout(currentTimer as NodeJS.Timeout);
-      const removalFunction = () =>
+      const removalFunction =
         muzzlers.get(requestor)!.muzzleCount === MAX_MUZZLES
-          ? removeMuzzler(requestor)
-          : decrementMuzzleCount(requestor);
+          ? () => removeMuzzler(requestor)
+          : () => decrementMuzzleCount(requestor);
       muzzlers.set(requestor, {
         muzzleCount: muzzlers.get(requestor)!.muzzleCount,
-        muzzleCountRemover: setTimeout(() => removalFunction(), MAX_MUZZLE_TIME)
+        muzzleCountRemover: setTimeout(removalFunction, MAX_MUZZLE_TIME)
       });
     }
     console.log(
