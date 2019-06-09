@@ -90,6 +90,7 @@ export function addUserToMuzzled(
     console.log(
       `${friendlyMuzzle} is now muzzled for ${timeToMuzzle} milliseconds`
     );
+    setTimeout(() => removeMuzzle(toMuzzle));
     return `Succesfully muzzled ${friendlyMuzzle} for ${
       +seconds === 60
         ? minutes + 1 + "m00s"
