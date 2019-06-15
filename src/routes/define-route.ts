@@ -9,7 +9,7 @@ import {
   define,
   formatDefs
 } from "../utils/define/define-utils";
-import { isMuzzled } from "../utils/muzzle/muzzle-utils";
+import { muzzled } from "../utils/muzzle/muzzle-utils";
 import { sendResponse } from "../utils/slack/slack-utils";
 
 export const defineRoutes: Router = express.Router();
@@ -24,11 +24,11 @@ defineRoutes.post("/define", async (req: Request, res: Response) => {
       attachments: formatDefs(defined.list)
     };
 
-    if (!isMuzzled(request.user_id)) {
+    if (muzzled.has(request.user_id)) {
+      res.send(`Sorry, can't do that while muzzled.`);
+    } else {
       sendResponse(request.response_url, response);
       res.status(200).send();
-    } else if (isMuzzled(request.user_id)) {
-      res.send(`Sorry, can't do that while muzzled.`);
     }
   } catch (e) {
     res.send(`error: ${e.message}`);
