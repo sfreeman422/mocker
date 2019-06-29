@@ -1,3 +1,8 @@
+import {
+  ChatDeleteArguments,
+  ChatPostMessageArguments,
+  WebClient
+} from "@slack/web-api";
 import { IMuzzled, IMuzzler } from "../../shared/models/muzzle/muzzle-models";
 // Store for the muzzled users.
 export const muzzled: Map<string, IMuzzled> = new Map();
@@ -8,6 +13,8 @@ export const muzzlers: Map<string, IMuzzler> = new Map();
 const MAX_MUZZLE_TIME = 3600000;
 const MAX_TIME_BETWEEN_MUZZLES = 3600000;
 export const MAX_MUZZLES = 2;
+
+const web: WebClient = new WebClient(process.env.muzzleBotToken);
 /**
  * Takes in text and randomly muzzles certain words.
  */
@@ -141,4 +148,31 @@ export function removeMuzzle(user: string) {
 
 export function isRandomEven() {
   return Math.floor(Math.random() * 2) % 2 === 0;
+}
+/**
+ * Handles deletion of messages.
+ */
+export function deleteMessage(channel: string, ts: string) {
+  const muzzleToken: any = process.env.muzzleBotToken;
+  const deleteRequest: ChatDeleteArguments = {
+    token: muzzleToken,
+    channel,
+    ts,
+    as_user: true
+  };
+
+  web.chat.delete(deleteRequest).catch(e => console.error(e));
+}
+
+/**
+ * Handles sending messages to the chat.
+ */
+export function sendMessage(channel: string, text: string) {
+  const muzzleToken: any = process.env.muzzleBotToken;
+  const postRequest: ChatPostMessageArguments = {
+    token: muzzleToken,
+    channel,
+    text
+  };
+  web.chat.postMessage(postRequest).catch(e => console.error(e));
 }

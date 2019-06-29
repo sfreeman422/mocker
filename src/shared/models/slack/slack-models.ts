@@ -24,13 +24,16 @@ export interface IEventRequest {
 
 export interface IEvent {
   client_msg_id: string;
-  type: string; // Is there more specific types?
+  type: string;
+  subtype: string;
   text: string;
   user: string;
+  username: string;
   ts: string;
   channel: string;
   event_ts: string;
   channel_type: string;
+  authed_users: string[];
 }
 
 export interface IAttachment {
