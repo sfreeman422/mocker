@@ -1,5 +1,13 @@
 import axios from "axios";
-import { IChannelResponse } from "../../shared/models/slack/slack-models";
+import {
+  IChannelResponse,
+  ISlackUser
+} from "../../shared/models/slack/slack-models";
+import { web } from "../muzzle/muzzle-utils";
+
+const userIdRegEx = /@\w+/gm;
+
+export let userList: ISlackUser[];
 
 export function sendResponse(
   responseUrl: string,
@@ -16,9 +24,36 @@ export function sendResponse(
 }
 
 export function getUserName(user: string): string {
-  return user.slice(user.indexOf("|") + 1, user.length - 1);
+  const userObj: ISlackUser | undefined = getUserById(user);
+  return userObj ? userObj.name : "";
 }
 
 export function getUserId(user: string): string {
-  return user.slice(2, user.indexOf("|"));
+  const regArray = user.match(userIdRegEx);
+  return regArray ? regArray[0].slice(1) : "";
+}
+
+export function getUserById(userId: string) {
+  return userList.find((user: ISlackUser) => user.id === userId);
+}
+
+/**
+ * TO BE USED EXCLUSIVELY FOR TESTING. WE SHOULD *NEVER* be setting the userList manually
+ * This should be handled by getAllUsers() only.
+ */
+export function setUserList(list: ISlackUser[]) {
+  userList = list;
+}
+
+export function getAllUsers() {
+  web.users
+    .list()
+    .then(resp => {
+      userList = resp.members as ISlackUser[];
+    })
+    .catch(e => {
+      console.error("Failed to retrieve users", e);
+      console.error("Retrying in 5 seconds");
+      setTimeout(() => getAllUsers(), 5000);
+    });
 }

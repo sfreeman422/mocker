@@ -10,7 +10,7 @@ import {
   muzzled,
   sendMessage
 } from "../utils/muzzle/muzzle-utils";
-import { getUserId, getUserName } from "../utils/slack/slack-utils";
+import { getUserId } from "../utils/slack/slack-utils";
 
 export const muzzleRoutes: Router = express.Router();
 const MAX_SUPPRESSIONS: number = 7;
@@ -34,7 +34,10 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
     }
   } else if (
     request.event.subtype === "bot_message" &&
-    muzzled.has(request.authed_users[0]) &&
+    request.event.attachments &&
+    muzzled.has(
+      getUserId(request.event.attachments[0].text || request.event.text)
+    ) &&
     request.event.username !== "muzzle"
   ) {
     console.log(
@@ -50,12 +53,9 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
 muzzleRoutes.post("/muzzle", async (req: Request, res: Response) => {
   const request: ISlashCommandRequest = req.body;
   const userId: string = getUserId(request.text);
-  const userName: string = getUserName(request.text);
-  const results = await addUserToMuzzled(
-    userId,
-    userName,
-    request.user_id
-  ).catch(e => res.send(e));
+  const results = await addUserToMuzzled(userId, request.user_id).catch(e =>
+    res.send(e)
+  );
   if (results) {
     res.send(results);
   }
