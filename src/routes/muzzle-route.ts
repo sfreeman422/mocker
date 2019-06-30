@@ -4,9 +4,14 @@ import {
   ISlashCommandRequest
 } from "../shared/models/slack/slack-models";
 import {
+  ABUSE_PENALTY_TIME,
+  addMuzzleTime,
   addUserToMuzzled,
+  containsAt,
   deleteMessage,
+  getTimeString,
   isUserMuzzled,
+  sendMessage,
   sendMuzzledMessage,
   shouldBotMessageBeMuzzled
 } from "../utils/muzzle/muzzle-utils";
@@ -28,6 +33,26 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
       request.event.user,
       request.event.text
     );
+    if (containsAt(request.event.text)) {
+      console.log(
+        `${getUserName(
+          request.event.user
+        )} atttempted to tag someone. Muzzle increased by ${ABUSE_PENALTY_TIME}!`
+      );
+      addMuzzleTime(request.event.user);
+      setTimeout(
+        () =>
+          sendMessage(
+            request.event.channel,
+            `:rotating_light: <@${
+              request.event.user
+            }> attempted to tag someone, or the channel while muzzled! Muzzle increased by ${getTimeString(
+              ABUSE_PENALTY_TIME
+            )} :rotating_light:`
+          ),
+        1000
+      );
+    }
   } else if (shouldBotMessageBeMuzzled(request)) {
     console.log(
       `${getUserName(

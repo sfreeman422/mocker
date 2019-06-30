@@ -14,6 +14,7 @@ export const requestors: Map<string, IMuzzler> = new Map();
 // Time period in which a user must wait before making more muzzles.
 const MAX_MUZZLE_TIME = 3600000;
 const MAX_TIME_BETWEEN_MUZZLES = 3600000;
+export const ABUSE_PENALTY_TIME = 300000;
 const MAX_SUPPRESSIONS: number = 7;
 const MAX_MUZZLES = 2;
 
@@ -30,6 +31,26 @@ export function muzzle(text: string) {
       isRandomEven() && !containsAt(word) ? ` *${word}* ` : " ..mMm.. ";
   }
   return returnText;
+}
+
+export function addMuzzleTime(userId: string) {
+  if (userId && muzzled.has(userId)) {
+    const removalFn = muzzled.get(userId)!.removalFn;
+    const newTime = getRemainingTime(removalFn) + ABUSE_PENALTY_TIME;
+    clearTimeout(muzzled.get(userId)!.removalFn);
+    console.log(`Setting ${getUserName(userId)}'s muzzle time to ${newTime}`);
+    muzzled.set(userId, {
+      suppressionCount: muzzled.get(userId)!.suppressionCount,
+      muzzledBy: muzzled.get(userId)!.muzzledBy,
+      removalFn: setTimeout(() => removeMuzzle(userId), newTime)
+    });
+  }
+}
+
+function getRemainingTime(timeout: any) {
+  return Math.ceil(
+    timeout._idleStart + timeout._idleTimeout - process.uptime() * 1000
+  );
 }
 
 /**
@@ -86,7 +107,7 @@ export function shouldBotMessageBeMuzzled(request: IEventRequest) {
     request.event.subtype === "bot_message" &&
     request.event.attachments &&
     isUserMuzzled(
-      getUserId(request.event.attachments[0].text || request.event.text)
+      getUserId(request.event.text || request.event.attachments[0].text)
     ) &&
     request.event.username !== "muzzle"
   );
@@ -117,16 +138,14 @@ function setMuzzlerCount(requestorId: string) {
 }
 
 /**
- * Adds a userId to the muzzled array, adds the requestorId to the requestorsArray, sets timeout for removeMuzzler.
+ * Adds a userId to the muzzled array, and sets timeout for removeMuzzle.
  */
 function muzzleUser(userId: string, requestorId: string, timeToMuzzle: number) {
   muzzled.set(userId, {
     suppressionCount: 0,
-    muzzledBy: requestorId
+    muzzledBy: requestorId,
+    removalFn: setTimeout(() => removeMuzzle(userId), timeToMuzzle)
   });
-
-  setMuzzlerCount(requestorId);
-  setTimeout(() => removeMuzzle(userId), timeToMuzzle);
 }
 
 /**
@@ -156,6 +175,7 @@ export function addUserToMuzzled(userId: string, requestorId: string) {
     } else {
       const timeToMuzzle = getTimeToMuzzle();
       muzzleUser(userId, requestorId, timeToMuzzle);
+      setMuzzlerCount(requestorId);
       console.log(
         `${userName} | ${userId}  is now muzzled for ${timeToMuzzle} milliseconds`
       );
@@ -215,7 +235,8 @@ export function sendMuzzledMessage(
   if (muzzled.get(userId)!.suppressionCount < MAX_SUPPRESSIONS) {
     muzzled.set(userId, {
       suppressionCount: ++muzzled.get(userId)!.suppressionCount,
-      muzzledBy: muzzled.get(userId)!.muzzledBy
+      muzzledBy: muzzled.get(userId)!.muzzledBy,
+      removalFn: muzzled.get(userId)!.removalFn
     });
     sendMessage(channel, `<@${userId}> says "${muzzle(text)}"`);
   }
