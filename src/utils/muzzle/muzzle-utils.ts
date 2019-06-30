@@ -5,7 +5,11 @@ import {
 } from "@slack/web-api";
 import { IMuzzled, IMuzzler } from "../../shared/models/muzzle/muzzle-models";
 import { IEventRequest } from "../../shared/models/slack/slack-models";
-import { getUserId, getUserName } from "../slack/slack-utils";
+import {
+  getUserId,
+  getUserIdByCallbackId,
+  getUserName
+} from "../slack/slack-utils";
 // Store for the muzzled users.
 export const muzzled: Map<string, IMuzzled> = new Map();
 // Store for people who are muzzling others.
@@ -99,16 +103,49 @@ export function isUserMuzzled(userId: string) {
   return muzzled.has(userId);
 }
 
+function getBotId(
+  fromText: string | undefined,
+  fromAttachmentText: string | undefined,
+  fromPretext: string | undefined,
+  fromCallbackId: string | undefined
+) {
+  return fromText || fromAttachmentText || fromPretext || fromCallbackId;
+}
+
 /**
  * Determines whether or not a bot message should be removed.
  */
 export function shouldBotMessageBeMuzzled(request: IEventRequest) {
+  let userIdByEventText;
+  let userIdByAttachmentText;
+  let userIdByAttachmentPretext;
+  let userIdByCallbackId;
+
+  if (request.event.text) {
+    userIdByEventText = getUserId(request.event.text);
+  } else if (request.event.attachments && request.event.attachments.length) {
+    userIdByAttachmentText = getUserId(request.event.attachments[0].text);
+    userIdByAttachmentPretext = getUserId(request.event.attachments[0].pretext);
+
+    if (request.event.attachments[0].callback_id) {
+      userIdByCallbackId = getUserIdByCallbackId(
+        request.event.attachments[0].callback_id
+      );
+    }
+  }
+
+  const finalUserId = getBotId(
+    userIdByEventText,
+    userIdByAttachmentText,
+    userIdByAttachmentPretext,
+    userIdByCallbackId
+  );
+
   return (
     request.event.subtype === "bot_message" &&
     request.event.attachments &&
-    isUserMuzzled(
-      getUserId(request.event.text || request.event.attachments[0].text)
-    ) &&
+    finalUserId &&
+    isUserMuzzled(finalUserId) &&
     request.event.username !== "muzzle"
   );
 }

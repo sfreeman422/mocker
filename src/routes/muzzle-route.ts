@@ -55,11 +55,7 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
     }
   } else if (shouldBotMessageBeMuzzled(request)) {
     console.log(
-      `${getUserName(
-        request.event.text || request.event.attachments[0].text
-      )} | ${request.event.text ||
-        request.event.attachments[0]
-          .text} is muzzled and tried to send a bot message! Suppressing...`
+      `A user is muzzled and tried to send a bot message! Suppressing...`
     );
     deleteMessage(request.event.channel, request.event.ts);
   }
@@ -68,7 +64,7 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
 
 muzzleRoutes.post("/muzzle", async (req: Request, res: Response) => {
   const request: ISlashCommandRequest = req.body;
-  const userId: string = getUserId(request.text);
+  const userId: any = getUserId(request.text);
   const results = await addUserToMuzzled(userId, request.user_id).catch(e =>
     res.send(e)
   );
