@@ -9,11 +9,13 @@ import {
   addUserToMuzzled,
   containsTag,
   deleteMessage,
+  getMuzzleId,
   getTimeString,
   isUserMuzzled,
   sendMessage,
   sendMuzzledMessage,
-  shouldBotMessageBeMuzzled
+  shouldBotMessageBeMuzzled,
+  trackDeletedMessage
 } from "../utils/muzzle/muzzle-utils";
 import { getUserId, getUserName } from "../utils/slack/slack-utils";
 
@@ -21,7 +23,7 @@ export const muzzleRoutes: Router = express.Router();
 
 muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
   const request: IEventRequest = req.body;
-  if (isUserMuzzled(request.event.user)) {
+  if (isUserMuzzled(request.event.user) && !containsTag(request.event.text)) {
     console.log(
       `${getUserName(request.event.user)} | ${
         request.event.user
@@ -33,26 +35,27 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
       request.event.user,
       request.event.text
     );
-    if (containsTag(request.event.text)) {
-      console.log(
-        `${getUserName(
-          request.event.user
-        )} atttempted to tag someone. Muzzle increased by ${ABUSE_PENALTY_TIME}!`
-      );
-      addMuzzleTime(request.event.user);
-      setTimeout(
-        () =>
-          sendMessage(
-            request.event.channel,
-            `:rotating_light: <@${
-              request.event.user
-            }> attempted to tag someone, or the channel while muzzled! Muzzle increased by ${getTimeString(
-              ABUSE_PENALTY_TIME
-            )} :rotating_light:`
-          ),
-        1000
-      );
-    }
+  } else if (
+    isUserMuzzled(request.event.user) &&
+    containsTag(request.event.text)
+  ) {
+    const muzzleId = getMuzzleId(request.event.user);
+    console.log(
+      `${getUserName(
+        request.event.user
+      )} atttempted to tag someone. Muzzle increased by ${ABUSE_PENALTY_TIME}!`
+    );
+    addMuzzleTime(request.event.user, ABUSE_PENALTY_TIME);
+    deleteMessage(request.event.channel, request.event.ts);
+    trackDeletedMessage(muzzleId, request.event.text);
+    sendMessage(
+      request.event.channel,
+      `:rotating_light: <@${
+        request.event.user
+      }> attempted to @ while muzzled! Muzzle increased by ${getTimeString(
+        ABUSE_PENALTY_TIME
+      )} :rotating_light:`
+    );
   } else if (shouldBotMessageBeMuzzled(request)) {
     console.log(
       `A user is muzzled and tried to send a bot message! Suppressing...`
@@ -65,9 +68,9 @@ muzzleRoutes.post("/muzzle/handle", (req: Request, res: Response) => {
 muzzleRoutes.post("/muzzle", async (req: Request, res: Response) => {
   const request: ISlashCommandRequest = req.body;
   const userId: any = getUserId(request.text);
-  const results = await addUserToMuzzled(userId, request.user_id).catch(e =>
-    res.send(e)
-  );
+  const results = await addUserToMuzzled(userId, request.user_id).catch(e => {
+    res.send(e);
+  });
   if (results) {
     res.send(results);
   }

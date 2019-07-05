@@ -3,6 +3,13 @@ import {
   ChatPostMessageArguments,
   WebClient
 } from "@slack/web-api";
+import {
+  addMuzzleToDb,
+  incrementCharacterSuppressions,
+  incrementMessageSuppressions,
+  incrementMuzzleTime,
+  incrementWordSuppressions
+} from "../../db/Muzzle/actions/muzzle-actions";
 import { IMuzzled, IMuzzler } from "../../shared/models/muzzle/muzzle-models";
 import { IEventRequest } from "../../shared/models/slack/slack-models";
 import {
@@ -15,7 +22,7 @@ export const muzzled: Map<string, IMuzzled> = new Map();
 // Store for people who are muzzling others.
 export const requestors: Map<string, IMuzzler> = new Map();
 
-// Time period in which a user must wait before making more muzzles.
+// Muzzle Constants
 const MAX_MUZZLE_TIME = 3600000;
 const MAX_TIME_BETWEEN_MUZZLES = 3600000;
 export const ABUSE_PENALTY_TIME = 300000;
@@ -27,25 +34,40 @@ export const web: WebClient = new WebClient(process.env.muzzleBotToken);
 /**
  * Takes in text and randomly muzzles certain words.
  */
-export function muzzle(text: string) {
+export function muzzle(text: string, muzzleId: number) {
+  const replacementText = " ..mMm... ";
   let returnText = "";
   const words = text.split(" ");
+  let wordsSuppressed = 0;
+  let charactersSuppressed = 0;
+  let replacementWord;
   for (const word of words) {
-    returnText +=
-      isRandomEven() && !containsTag(word) ? ` *${word}* ` : " ..mMm.. ";
+    replacementWord =
+      isRandomEven() && !containsTag(word) ? ` *${word}* ` : replacementText;
+    if (replacementWord === replacementText) {
+      wordsSuppressed++;
+      charactersSuppressed += word.length;
+    }
+    returnText += replacementWord;
   }
+  incrementMessageSuppressions(muzzleId);
+  incrementCharacterSuppressions(muzzleId, charactersSuppressed);
+  incrementWordSuppressions(muzzleId, wordsSuppressed);
   return returnText;
 }
 
-export function addMuzzleTime(userId: string) {
+export function addMuzzleTime(userId: string, timeToAdd: number) {
   if (userId && muzzled.has(userId)) {
     const removalFn = muzzled.get(userId)!.removalFn;
-    const newTime = getRemainingTime(removalFn) + ABUSE_PENALTY_TIME;
+    const newTime = getRemainingTime(removalFn) + timeToAdd;
+    const muzzleId = muzzled.get(userId)!.id;
+    incrementMuzzleTime(muzzleId, ABUSE_PENALTY_TIME);
     clearTimeout(muzzled.get(userId)!.removalFn);
     console.log(`Setting ${getUserName(userId)}'s muzzle time to ${newTime}`);
     muzzled.set(userId, {
       suppressionCount: muzzled.get(userId)!.suppressionCount,
       muzzledBy: muzzled.get(userId)!.muzzledBy,
+      id: muzzled.get(userId)!.id,
       removalFn: setTimeout(() => removeMuzzle(userId), newTime)
     });
   }
@@ -57,11 +79,17 @@ function getRemainingTime(timeout: any) {
   );
 }
 
+export function getMuzzleId(userId: string) {
+  return muzzled.get(userId)!.id;
+}
+
 /**
  * Determines whether or not a user is trying to @user, @channel or @here while muzzled.
  */
-export function containsTag(word: string): boolean {
-  return !!getUserId(word) || word === "<!channel>" || word === "<!here>";
+export function containsTag(text: string): boolean {
+  return (
+    text.includes("<!channel>") || text.includes("<!here>") || !!getUserId(text)
+  );
 }
 
 /**
@@ -173,10 +201,16 @@ function setMuzzlerCount(requestorId: string) {
 /**
  * Adds a userId to the muzzled array, and sets timeout for removeMuzzle.
  */
-function muzzleUser(userId: string, requestorId: string, timeToMuzzle: number) {
+function muzzleUser(
+  userId: string,
+  requestorId: string,
+  id: number,
+  timeToMuzzle: number
+) {
   muzzled.set(userId, {
     suppressionCount: 0,
     muzzledBy: requestorId,
+    id,
     removalFn: setTimeout(() => removeMuzzle(userId), timeToMuzzle)
   });
 }
@@ -187,8 +221,12 @@ function muzzleUser(userId: string, requestorId: string, timeToMuzzle: number) {
 export function addUserToMuzzled(userId: string, requestorId: string) {
   const userName = getUserName(userId);
   const requestorName = getUserName(requestorId);
-  return new Promise((resolve, reject) => {
-    if (isUserMuzzled(userId)) {
+  return new Promise(async (resolve, reject) => {
+    if (!userId) {
+      reject(
+        `Invalid username passed in. You can only muzzle existing slack users`
+      );
+    } else if (isUserMuzzled(userId)) {
       console.error(
         `${requestorName} | ${requestorId} attempted to muzzle ${userName} | ${userId} but ${userName} | ${userId} is already muzzled.`
       );
@@ -207,14 +245,22 @@ export function addUserToMuzzled(userId: string, requestorId: string) {
       );
     } else {
       const timeToMuzzle = getTimeToMuzzle();
-      muzzleUser(userId, requestorId, timeToMuzzle);
-      setMuzzlerCount(requestorId);
-      console.log(
-        `${userName} | ${userId}  is now muzzled for ${timeToMuzzle} milliseconds`
-      );
-      resolve(
-        `Succesfully muzzled ${userName} for ${getTimeString(timeToMuzzle)}`
-      );
+      const muzzleFromDb = await addMuzzleToDb(
+        requestorId,
+        userId,
+        timeToMuzzle
+      ).catch((e: any) => {
+        console.error(e);
+        reject(`Muzzle failed!`);
+      });
+
+      if (muzzleFromDb) {
+        muzzleUser(userId, requestorId, muzzleFromDb.id, timeToMuzzle);
+        setMuzzlerCount(requestorId);
+        resolve(
+          `Succesfully muzzled ${userName} for ${getTimeString(timeToMuzzle)}`
+        );
+      }
     }
   });
 }
@@ -265,14 +311,31 @@ export function sendMuzzledMessage(
   userId: string,
   text: string
 ) {
+  const muzzleId = muzzled.get(userId)!.id;
   if (muzzled.get(userId)!.suppressionCount < MAX_SUPPRESSIONS) {
     muzzled.set(userId, {
       suppressionCount: ++muzzled.get(userId)!.suppressionCount,
       muzzledBy: muzzled.get(userId)!.muzzledBy,
+      id: muzzleId,
       removalFn: muzzled.get(userId)!.removalFn
     });
-    sendMessage(channel, `<@${userId}> says "${muzzle(text)}"`);
+    sendMessage(channel, `<@${userId}> says "${muzzle(text, muzzleId)}"`);
+  } else {
+    trackDeletedMessage(muzzleId, text);
   }
+}
+
+export function trackDeletedMessage(muzzleId: number, text: string) {
+  const words = text.split(" ");
+  let wordsSuppressed = 0;
+  let charactersSuppressed = 0;
+  for (const word of words) {
+    wordsSuppressed++;
+    charactersSuppressed += word.length;
+  }
+  incrementMessageSuppressions(muzzleId);
+  incrementWordSuppressions(muzzleId, wordsSuppressed);
+  incrementCharacterSuppressions(muzzleId, charactersSuppressed);
 }
 
 /**
