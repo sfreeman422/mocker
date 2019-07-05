@@ -4,15 +4,14 @@ import { ISlackUser } from "../../shared/models/slack/slack-models";
 import { setUserList } from "../slack/slack-utils";
 import {
   addUserToMuzzled,
-  containsTag,
   muzzle,
   muzzled,
   removeMuzzle,
-  removeMuzzler,
+  removeRequestor,
   requestors
-} from "./muzzle-utils";
+} from "./muzzle";
 
-describe("muzzle-utils", () => {
+describe("muzzle", () => {
   const testData = {
     user: "123",
     user2: "456",
@@ -130,43 +129,16 @@ describe("muzzle-utils", () => {
     });
   });
 
-  describe("removeMuzzler()", () => {
+  describe("removeRequestor()", () => {
     it("should remove a user from the muzzler array", () => {
       addUserToMuzzled(testData.user, testData.requestor);
       expect(muzzled.size).to.equal(1);
       expect(muzzled.has(testData.user)).to.equal(true);
       expect(requestors.size).to.equal(1);
       expect(requestors.has(testData.requestor)).to.equal(true);
-      removeMuzzler(testData.requestor);
+      removeRequestor(testData.requestor);
       expect(requestors.has(testData.requestor)).to.equal(false);
       expect(requestors.size).to.equal(0);
-    });
-  });
-
-  describe("containsTag()", () => {
-    it("should return false if a word has @ in it and is not a tag", () => {
-      const testWord = ".@channel";
-      expect(containsTag(testWord)).to.equal(false);
-    });
-
-    it("should return false if a word does not include @", () => {
-      const testWord = "test";
-      expect(containsTag(testWord)).to.equal(false);
-    });
-
-    it("should return true if a word has <!channel> in it", () => {
-      const testWord = "<!channel>";
-      expect(containsTag(testWord)).to.equal(true);
-    });
-
-    it("should return true if a word has <!here> in it", () => {
-      const testWord = "<!here>";
-      expect(containsTag(testWord)).to.equal(true);
-    });
-
-    it("should return true if a word has a tagged user", () => {
-      const testUser = "<@UTJFJKL>";
-      expect(containsTag(testUser)).to.equal(true);
     });
   });
 
@@ -174,14 +146,14 @@ describe("muzzle-utils", () => {
     it("should always muzzle a tagged user", () => {
       const testSentence =
         "<@U2TKJ> <@JKDSF> <@SDGJSK> <@LSKJDSG> <@lkjdsa> <@LKSJDF> <@SDLJG> <@jrjrjr> <@fudka>";
-      expect(muzzle(testSentence)).to.equal(
+      expect(muzzle(testSentence, 1)).to.equal(
         " ..mMm..  ..mMm..  ..mMm..  ..mMm..  ..mMm..  ..mMm..  ..mMm..  ..mMm..  ..mMm.. "
       );
     });
 
     it("should always muzzle <!channel>", () => {
       const testSentence = "<!channel> hey guys";
-      expect(muzzle(testSentence).includes("<!channel>")).to.equal(false);
+      expect(muzzle(testSentence, 1).includes("<!channel>")).to.equal(false);
     });
   });
 });

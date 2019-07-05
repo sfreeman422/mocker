@@ -8,19 +8,28 @@ import {
   incrementCharacterSuppressions,
   incrementMessageSuppressions,
   incrementMuzzleTime,
-  incrementWordSuppressions
+  incrementWordSuppressions,
+  trackDeletedMessage
 } from "../../db/Muzzle/actions/muzzle-actions";
-import { IMuzzled, IMuzzler } from "../../shared/models/muzzle/muzzle-models";
+import { IMuzzled, IRequestor } from "../../shared/models/muzzle/muzzle-models";
 import { IEventRequest } from "../../shared/models/slack/slack-models";
 import {
+  containsTag,
+  getBotId,
   getUserId,
   getUserIdByCallbackId,
   getUserName
 } from "../slack/slack-utils";
+import {
+  getRemainingTime,
+  getTimeString,
+  getTimeToMuzzle,
+  isRandomEven
+} from "./muzzle-utilities";
 // Store for the muzzled users.
 export const muzzled: Map<string, IMuzzled> = new Map();
 // Store for people who are muzzling others.
-export const requestors: Map<string, IMuzzler> = new Map();
+export const requestors: Map<string, IRequestor> = new Map();
 
 // Muzzle Constants
 const MAX_MUZZLE_TIME = 3600000;
@@ -56,6 +65,9 @@ export function muzzle(text: string, muzzleId: number) {
   return returnText;
 }
 
+/**
+ * Adds the specified amount of time to a specified muzzled user.
+ */
 export function addMuzzleTime(userId: string, timeToAdd: number) {
   if (userId && muzzled.has(userId)) {
     const removalFn = muzzled.get(userId)!.removalFn;
@@ -73,41 +85,11 @@ export function addMuzzleTime(userId: string, timeToAdd: number) {
   }
 }
 
-function getRemainingTime(timeout: any) {
-  return Math.ceil(
-    timeout._idleStart + timeout._idleTimeout - process.uptime() * 1000
-  );
-}
-
+/**
+ * Gets the corresponding database ID for the user's current muzzle.
+ */
 export function getMuzzleId(userId: string) {
   return muzzled.get(userId)!.id;
-}
-
-/**
- * Determines whether or not a user is trying to @user, @channel or @here while muzzled.
- */
-export function containsTag(text: string): boolean {
-  return (
-    text.includes("<!channel>") || text.includes("<!here>") || !!getUserId(text)
-  );
-}
-
-/**
- * Gives us a random value between 30 seconds and 3 minutes.
- */
-export function getTimeToMuzzle() {
-  return Math.floor(Math.random() * (180000 - 30000 + 1) + 30000);
-}
-
-/**
- * Gives us a time string formatted as 1m20s to show the user.
- */
-export function getTimeString(time: number) {
-  const minutes = Math.floor(time / 60000);
-  const seconds = ((time % 60000) / 1000).toFixed(0);
-  return +seconds === 60
-    ? minutes + 1 + "m00s"
-    : minutes + "m" + (+seconds < 10 ? "0" : "") + seconds + "s";
 }
 
 /**
@@ -125,15 +107,6 @@ function isMaxMuzzlesReached(userId: string) {
  */
 export function isUserMuzzled(userId: string) {
   return muzzled.has(userId);
-}
-
-function getBotId(
-  fromText: string | undefined,
-  fromAttachmentText: string | undefined,
-  fromPretext: string | undefined,
-  fromCallbackId: string | undefined
-) {
-  return fromText || fromAttachmentText || fromPretext || fromCallbackId;
 }
 
 /**
@@ -175,9 +148,9 @@ export function shouldBotMessageBeMuzzled(request: IEventRequest) {
 }
 
 /**
- * Adds a requestor to the requestors array with a muzzleCount to track how many muzzles have been performed, as well as a removal funciton.
+ * Adds a requestor to the requestors map with a muzzleCount to track how many muzzles have been performed, as well as a removal function.
  */
-function setMuzzlerCount(requestorId: string) {
+function setRequestorCount(requestorId: string) {
   const muzzleCount = requestors.has(requestorId)
     ? ++requestors.get(requestorId)!.muzzleCount
     : 1;
@@ -190,7 +163,7 @@ function setMuzzlerCount(requestorId: string) {
   const removalFunction =
     requestors.has(requestorId) &&
     requestors.get(requestorId)!.muzzleCount === MAX_MUZZLES
-      ? () => removeMuzzler(requestorId)
+      ? () => removeRequestor(requestorId)
       : () => decrementMuzzleCount(requestorId);
   requestors.set(requestorId, {
     muzzleCount,
@@ -199,7 +172,7 @@ function setMuzzlerCount(requestorId: string) {
 }
 
 /**
- * Adds a userId to the muzzled array, and sets timeout for removeMuzzle.
+ * Adds a userId to the muzzled map, and sets timeout for removeMuzzle.
  */
 function muzzleUser(
   userId: string,
@@ -216,7 +189,7 @@ function muzzleUser(
 }
 
 /**
- * Adds a user to the muzzled array and sets a timeout to remove the muzzle within a random time of 30 seconds to 3 minutes
+ * Adds a user to the muzzled map and sets a timeout to remove the muzzle within a random time of 30 seconds to 3 minutes
  */
 export function addUserToMuzzled(userId: string, requestorId: string) {
   const userName = getUserName(userId);
@@ -256,7 +229,7 @@ export function addUserToMuzzled(userId: string, requestorId: string) {
 
       if (muzzleFromDb) {
         muzzleUser(userId, requestorId, muzzleFromDb.id, timeToMuzzle);
-        setMuzzlerCount(requestorId);
+        setRequestorCount(requestorId);
         resolve(
           `Succesfully muzzled ${userName} for ${getTimeString(timeToMuzzle)}`
         );
@@ -264,7 +237,9 @@ export function addUserToMuzzled(userId: string, requestorId: string) {
     }
   });
 }
-
+/**
+ * Decrements the muzzleCount on a requestor.
+ */
 export function decrementMuzzleCount(requestorId: string) {
   if (requestors.has(requestorId)) {
     const decrementedMuzzle = --requestors.get(requestorId)!.muzzleCount;
@@ -286,7 +261,10 @@ export function decrementMuzzleCount(requestorId: string) {
   }
 }
 
-export function removeMuzzler(userId: string) {
+/**
+ * Removes a requestor from the map.
+ */
+export function removeRequestor(userId: string) {
   requestors.delete(userId);
   console.log(
     `${MAX_MUZZLE_TIME} has passed since ${getUserName(
@@ -295,6 +273,9 @@ export function removeMuzzler(userId: string) {
   );
 }
 
+/**
+ * Removes a muzzle from the specified user.
+ */
 export function removeMuzzle(userId: string) {
   muzzled.delete(userId);
   console.log(
@@ -302,10 +283,9 @@ export function removeMuzzle(userId: string) {
   );
 }
 
-export function isRandomEven() {
-  return Math.floor(Math.random() * 2) % 2 === 0;
-}
-
+/**
+ * Wrapper for sendMessage that handles suppression in memory and, if max suppressions are reached, handles suppression storage to disk.
+ */
 export function sendMuzzledMessage(
   channel: string,
   userId: string,
@@ -323,19 +303,6 @@ export function sendMuzzledMessage(
   } else {
     trackDeletedMessage(muzzleId, text);
   }
-}
-
-export function trackDeletedMessage(muzzleId: number, text: string) {
-  const words = text.split(" ");
-  let wordsSuppressed = 0;
-  let charactersSuppressed = 0;
-  for (const word of words) {
-    wordsSuppressed++;
-    charactersSuppressed += word.length;
-  }
-  incrementMessageSuppressions(muzzleId);
-  incrementWordSuppressions(muzzleId, wordsSuppressed);
-  incrementCharacterSuppressions(muzzleId, charactersSuppressed);
 }
 
 /**
