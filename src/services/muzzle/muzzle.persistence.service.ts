@@ -76,8 +76,11 @@ export class MuzzlePersistenceService {
     const muzzlerByChars = await this.getMuzzlerByChars();
     const muzzlerByTime = await this.getMuzzlerByTime();
 
+    const accuracy = await this.getAccuracy();
     const kdr = await this.getKdr();
-    const nemesis = await this.getNemesis();
+
+    const rawNemesis = await this.getNemesisByRaw();
+    const successNemesis = await this.getNemesisBySuccessful();
 
     return {
       muzzled: {
@@ -94,8 +97,10 @@ export class MuzzlePersistenceService {
         byChars: muzzlerByChars,
         byTime: muzzlerByTime
       },
+      accuracy,
       kdr,
-      nemesis
+      rawNemesis,
+      successNemesis
     };
   }
 
@@ -237,7 +242,7 @@ export class MuzzlePersistenceService {
       .getRawMany();
   }
 
-  private getKdr(range?: string) {
+  private getAccuracy(range?: string) {
     if (range) {
       console.log(range);
     }
@@ -245,28 +250,93 @@ export class MuzzlePersistenceService {
     return getRepository(Muzzle)
       .createQueryBuilder("muzzle")
       .select("muzzle.requestorId")
-      .addSelect("SUM(IF(muzzle.messagesSuppressed > 0, 1, 0))/COUNT(*)", "kdr")
+      .addSelect(
+        "SUM(IF(muzzle.messagesSuppressed > 0, 1, 0))/COUNT(*)",
+        "accuracy"
+      )
       .addSelect("SUM(IF(muzzle.messagesSuppressed > 0, 1, 0))", "kills")
       .addSelect("COUNT(*)", "deaths")
       .groupBy("muzzle.requestorId")
-      .orderBy("kdr", "DESC")
+      .orderBy("accuracy", "DESC")
       .getRawMany();
   }
 
-  private getNemesis(range?: string) {
+  private getKdr(range?: string) {
     if (range) {
       console.log(range);
     }
 
-    const getNemesisSqlQuery = `SELECT a.requestorId, a.muzzledId, MAX(a.count) as killCount
-    FROM (SELECT requestorId, muzzledId, COUNT(*) as count FROM muzzle GROUP BY requestorId, muzzledId) AS a 
-    INNER JOIN(SELECT muzzledId, MAX(count) AS count
-    FROM (SELECT requestorId, muzzledId, COUNT(*) AS count FROM muzzle GROUP BY requestorId, muzzledId) AS c 
-    GROUP BY c.muzzledId) AS b 
+    const getKdrQuery = `
+    SELECT b.requestorId, a.count AS deaths, b.count as kills, b.count/a.count as kdr
+    FROM (SELECT muzzledId, COUNT(*) as count FROM muzzle WHERE messagesSuppressed > 0 GROUP BY muzzledId) as a
+    INNER JOIN (
+    SELECT requestorId, COUNT(*) as count
+    FROM muzzle
+    WHERE messagesSuppressed > 0
+    GROUP BY requestorId
+    ) AS b
+    ON a.muzzledId = b.requestorId
+    GROUP BY b.requestorId, a.count, b.count, kdr
+    ORDER BY kdr DESC;
+    `;
+    return getRepository(Muzzle).query(getKdrQuery);
+  }
+
+  private getNemesisByRaw(range?: string) {
+    if (range) {
+      console.log(range);
+    }
+
+    const getNemesisSqlQuery = `
+    SELECT a.requestorId, a.muzzledId, MAX(a.count) as killCount
+    FROM (
+      SELECT requestorId, muzzledId, COUNT(*) as count
+      FROM muzzle
+      GROUP BY requestorId, muzzledId
+    ) AS a 
+    INNER JOIN(
+      SELECT muzzledId, MAX(count) AS count
+      FROM (
+        SELECT requestorId, muzzledId, COUNT(*) AS count 
+        FROM muzzle
+        GROUP BY requestorId, muzzledId
+      ) AS c 
+      GROUP BY c.muzzledId
+    ) AS b 
     ON a.muzzledId = b.muzzledId AND a.count = b.count
     GROUP BY a.requestorId, a.muzzledId
     ORDER BY a.count DESC;`;
 
     return getRepository(Muzzle).query(getNemesisSqlQuery);
+  }
+
+  private getNemesisBySuccessful(range?: string) {
+    if (range) {
+      console.log(range);
+    }
+
+    const query = `
+      SELECT a.requestorId, a.muzzledId, MAX(a.count) as killCount
+      FROM (
+        SELECT requestorId, muzzledId, COUNT(*) as count
+        FROM muzzle
+        WHERE messagesSuppressed > 0
+        GROUP BY requestorId, muzzledId
+      ) AS a 
+      INNER JOIN(
+        SELECT muzzledId, MAX(count) AS count
+        FROM (
+          SELECT requestorId, muzzledId, COUNT(*) AS count 
+          FROM muzzle
+          WHERE messagesSuppressed > 0
+          GROUP BY requestorId, muzzledId
+        ) AS c 
+        GROUP BY c.muzzledId
+      ) AS b 
+      ON a.muzzledId = b.muzzledId AND a.count = b.count
+      GROUP BY a.requestorId, a.muzzledId
+      ORDER BY a.count DESC;`;
+
+    return getRepository(Muzzle).query(query);
   }
 }
