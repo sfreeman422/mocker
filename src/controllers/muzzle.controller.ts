@@ -5,6 +5,7 @@ import { MuzzleService } from "../services/muzzle/muzzle.service";
 import { ReportService } from "../services/report/report.service";
 import { SlackService } from "../services/slack/slack.service";
 import { WebService } from "../services/web/web.service";
+import { ReportType } from "../shared/models/muzzle/muzzle-models";
 import {
   IEventRequest,
   ISlashCommandRequest
@@ -85,13 +86,30 @@ muzzleController.post("/muzzle", async (req: Request, res: Response) => {
 
 muzzleController.post("/muzzle/stats", async (req: Request, res: Response) => {
   const request: ISlashCommandRequest = req.body;
-  console.log(req.body);
-  const userId: any = slackService.getUserId(request.text);
+  const userId: any = slackService.getUserId(request.user_id);
   if (muzzleService.isUserMuzzled(userId)) {
     res.send(`Sorry! Can't do that while muzzled.`);
+  } else if (request.text.split(" ").length > 1) {
+    res.send(
+      `Sorry! No support for multiple parameters at this time. Please choose one of: \`day\`, \`week\`, \`month\`, \`year\`, \`all\``
+    );
+  } else if (
+    request.text !== "" &&
+    !reportService.isValidReportType(request.text)
+  ) {
+    res.send(
+      `Sorry! You passed in \`${
+        request.text
+      }\` but we can only generate reports for the following values: \`day\`, \`week\`, \`month\`, \`year\`, \`all\``
+    );
   } else {
-    const report = await reportService.getReport();
-    webService.uploadFile(req.body.channel_id, report);
+    const reportType: ReportType = reportService.getReportType(request.text);
+    const report = await reportService.getReport(reportType);
+    webService.uploadFile(
+      req.body.channel_id,
+      report,
+      reportService.getReportTitle(reportType)
+    );
     res.status(200).send();
   }
 });

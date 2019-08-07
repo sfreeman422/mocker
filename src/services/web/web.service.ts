@@ -57,20 +57,20 @@ export class WebService {
     return this.web.users.list();
   }
 
-  public uploadFile(channel: string, content: string) {
+  public uploadFile(channel: string, content: string, title?: string) {
     const muzzleToken: any = process.env.muzzleBotUserToken;
     const uploadRequest: FilesUploadArguments = {
       channels: channel,
       content,
       filetype: "markdown",
       title: "Muzzle Report",
-      initial_comment: "A New Muzzle Report has been Generated",
+      initial_comment: title,
       token: muzzleToken
     };
 
     this.web.files
       .upload(uploadRequest)
-      .then(result => console.log(result))
+      .then(() => console.log("Uploaded new report successfully!"))
       .catch(e => console.error(e));
   }
 }
