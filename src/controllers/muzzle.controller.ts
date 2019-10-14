@@ -75,6 +75,7 @@ muzzleController.post("/muzzle/handle", (req: Request, res: Response) => {
 
 muzzleController.post("/muzzle", async (req: Request, res: Response) => {
   const request: ISlashCommandRequest = req.body;
+  console.log(request);
   const userId: any = slackService.getUserId(request.text);
   const results = await muzzleService
     .addUserToMuzzled(userId, request.user_id)
@@ -89,6 +90,7 @@ muzzleController.post("/muzzle", async (req: Request, res: Response) => {
 muzzleController.post("/muzzle/stats", async (req: Request, res: Response) => {
   const request: ISlashCommandRequest = req.body;
   const userId: string = request.user_id;
+  console.log(request);
   if (muzzleService.isUserMuzzled(userId)) {
     res.send(`Sorry! Can't do that while muzzled.`);
   } else if (request.text.split(" ").length > 1) {
