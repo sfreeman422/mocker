@@ -34,7 +34,7 @@ export class WebService {
         console.log("Message already deleted, no need to retry");
       } else {
         console.error(e);
-        console.error("Retrying in 5 seconds...");
+        console.error("Unable to delete message. Retrying in 5 seconds...");
         setTimeout(() => this.deleteMessage(channel, ts), 5000);
       }
     });
@@ -68,9 +68,6 @@ export class WebService {
       token: muzzleToken
     };
 
-    this.web.files
-      .upload(uploadRequest)
-      .then(() => console.log("Uploaded new report successfully!"))
-      .catch(e => console.error(e));
+    this.web.files.upload(uploadRequest).catch(e => console.error(e));
   }
 }
