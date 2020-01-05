@@ -36,7 +36,7 @@ export class CounterService {
         reject("You already have a counter for this user.");
       } else {
         await this.counterPersistenceService
-          .addCounter(requestorId, counteredId, false)
+          .addCounter(requestorId, counteredId)
           .then(() => {
             resolve(
               `Counter set for ${counterUserName} for the next ${getTimeString(
@@ -51,8 +51,8 @@ export class CounterService {
 
   public getCounterByRequestorAndUserId(requestorId: string, userId: string) {
     return this.counterPersistenceService.getCounterByRequestorAndUserId(
-      userId,
-      requestorId
+      requestorId,
+      userId
     );
   }
 
@@ -172,22 +172,11 @@ export class CounterService {
       );
       this.webService.sendMessage(
         channel,
-        `:crossed_swords: $<@${
-          counter!.requestorId
-        }> successfully countered <@${counter!.counteredId}>! <@${
+        `:crossed_swords: <@${counter!.requestorId}> successfully countered <@${
+          counter!.counteredId
+        }>! <@${
           counter!.counteredId
         }> has lost muzzle privileges for one hour and is muzzled for the next 5 minutes! :crossed_swords:`
-      );
-    } else {
-      this.counterPersistenceService.counterMuzzle(counter!.requestorId, id);
-      this.muzzlePersistenceService.removeMuzzlePrivileges(
-        counter!.requestorId
-      );
-      this.webService.sendMessage(
-        "#general",
-        `:flesh: <@${counter!.requestorId}> lives in fear of <@${
-          counter!.counteredId
-        }> and is now muzzled and has lost muzzle privileges for one hour. :flesh:`
       );
     }
   }
