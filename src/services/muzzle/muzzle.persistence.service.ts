@@ -1,6 +1,5 @@
 import moment from "moment";
 import { getRepository } from "typeorm";
-import { Backfire } from "../../shared/db/models/Backfire";
 import { Muzzle } from "../../shared/db/models/Muzzle";
 import {
   IMuzzled,
@@ -46,7 +45,7 @@ export class MuzzlePersistenceService {
             suppressionCount: 0,
             muzzledBy: requestorId,
             id: muzzleFromDb.id,
-            isBackfire: false,
+            isCounter: false,
             removalFn: setTimeout(() => this.removeMuzzle(muzzledId), time)
           });
           this.setRequestorCount(requestorId);
@@ -56,6 +55,23 @@ export class MuzzlePersistenceService {
     });
   }
 
+  public removeMuzzlePrivileges(requestorId: string) {
+    const requestorObj: IRequestor | undefined = this.requestors.get(
+      requestorId
+    );
+    if (requestorObj) {
+      clearTimeout(this.requestors.get(requestorId)!
+        .muzzleCountRemover as NodeJS.Timeout);
+    }
+
+    this.requestors.set(requestorId, {
+      muzzleCount: MAX_MUZZLES,
+      muzzleCountRemover: setTimeout(
+        () => this.removeRequestor(requestorId),
+        MAX_TIME_BETWEEN_MUZZLES
+      )
+    });
+  }
   /**
    * Adds a requestor to the requestors map with a muzzleCount to track how many muzzles have been performed, as well as a removal function.
    */
@@ -79,6 +95,7 @@ export class MuzzlePersistenceService {
       muzzleCountRemover: setTimeout(removalFunction, MAX_TIME_BETWEEN_MUZZLES)
     });
   }
+
   /**
    * Returns boolean whether max muzzles have been reached.
    */
@@ -89,44 +106,22 @@ export class MuzzlePersistenceService {
     );
   }
 
-  public addBackfire(muzzledId: string, time: number) {
-    const backfire = new Backfire();
-    backfire.muzzledId = muzzledId;
-    backfire.messagesSuppressed = 0;
-    backfire.wordsSuppressed = 0;
-    backfire.charactersSuppressed = 0;
-    backfire.milliseconds = time;
-
-    return getRepository(Backfire)
-      .save(backfire)
-      .then(backfireFromDb => {
-        this.muzzled.set(muzzledId, {
-          suppressionCount: 0,
-          muzzledBy: muzzledId,
-          id: backfireFromDb.id,
-          isBackfire: true,
-          removalFn: setTimeout(() => this.removeMuzzle(muzzledId), time)
-        });
-        this.setRequestorCount(muzzledId);
-      });
-  }
-
   /**
    * Adds the specified amount of time to a specified muzzled user.
    */
-  public addMuzzleTime(userId: string, timeToAdd: number, isBackfire: boolean) {
+  public addMuzzleTime(userId: string, timeToAdd: number) {
     if (userId && this.muzzled.has(userId)) {
       const removalFn = this.muzzled.get(userId)!.removalFn;
       const newTime = getRemainingTime(removalFn) + timeToAdd;
       const muzzleId = this.muzzled.get(userId)!.id;
-      this.incrementMuzzleTime(muzzleId, ABUSE_PENALTY_TIME, isBackfire);
+      this.incrementMuzzleTime(muzzleId, ABUSE_PENALTY_TIME);
       clearTimeout(this.muzzled.get(userId)!.removalFn);
       console.log(`Setting ${userId}'s muzzle time to ${newTime}`);
       this.muzzled.set(userId, {
         suppressionCount: this.muzzled.get(userId)!.suppressionCount,
         muzzledBy: this.muzzled.get(userId)!.muzzledBy,
         id: this.muzzled.get(userId)!.id,
-        isBackfire: this.muzzled.get(userId)!.isBackfire,
+        isCounter: false,
         removalFn: setTimeout(() => this.removeMuzzle(userId), newTime)
       });
     }
@@ -153,35 +148,16 @@ export class MuzzlePersistenceService {
     return this.muzzled.has(userId);
   }
 
-  /**
-   * Retrieves whether or not a muzzle is backfired.
-   */
-  public getIsBackfire(userId: string) {
-    return this.muzzled.has(userId) && this.muzzled.get(userId)!.isBackfire;
+  public incrementMuzzleTime(id: number, ms: number) {
+    return getRepository(Muzzle).increment({ id }, "milliseconds", ms);
   }
 
-  public incrementMuzzleTime(id: number, ms: number, isBackfire: boolean) {
-    return getRepository(isBackfire ? Backfire : Muzzle).increment(
-      { id },
-      "milliseconds",
-      ms
-    );
+  public incrementMessageSuppressions(id: number) {
+    return getRepository(Muzzle).increment({ id }, "messagesSuppressed", 1);
   }
 
-  public incrementMessageSuppressions(id: number, isBackfire: boolean) {
-    return getRepository(isBackfire ? Backfire : Muzzle).increment(
-      { id },
-      "messagesSuppressed",
-      1
-    );
-  }
-
-  public incrementWordSuppressions(
-    id: number,
-    suppressions: number,
-    isBackfire: boolean
-  ) {
-    return getRepository(isBackfire ? Backfire : Muzzle).increment(
+  public incrementWordSuppressions(id: number, suppressions: number) {
+    return getRepository(Muzzle).increment(
       { id },
       "wordsSuppressed",
       suppressions
@@ -233,10 +209,9 @@ export class MuzzlePersistenceService {
 
   public incrementCharacterSuppressions(
     id: number,
-    charactersSuppressed: number,
-    isBackfire: boolean
+    charactersSuppressed: number
   ) {
-    return getRepository(isBackfire ? Backfire : Muzzle).increment(
+    return getRepository(Muzzle).increment(
       { id },
       "charactersSuppressed",
       charactersSuppressed
@@ -246,16 +221,12 @@ export class MuzzlePersistenceService {
    * Determines suppression counts for messages that are ONLY deleted and not muzzled.
    * Used when a muzzled user has hit their max suppressions or when they have tagged channel.
    */
-  public trackDeletedMessage(
-    muzzleId: number,
-    text: string,
-    isBackfire: boolean
-  ) {
+  public trackDeletedMessage(muzzleId: number, text: string) {
     const words = text.split(" ").length;
     const characters = text.split("").length;
-    this.incrementMessageSuppressions(muzzleId, isBackfire);
-    this.incrementWordSuppressions(muzzleId, words, isBackfire);
-    this.incrementCharacterSuppressions(muzzleId, characters, isBackfire);
+    this.incrementMessageSuppressions(muzzleId);
+    this.incrementWordSuppressions(muzzleId, words);
+    this.incrementCharacterSuppressions(muzzleId, characters);
   }
 
   /** Wrapper to generate a generic muzzle report in */
