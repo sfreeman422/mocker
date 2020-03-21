@@ -4,7 +4,7 @@ interface INatoMapping {
 export const NATO_MAPPINGS: INatoMapping = {
   U2YJFUESC: "Zulu Mike",
   U2YJQN2KB: "Sierra Foxtrot",
-  U2YLZPKJ4: "Charlie Mike",
+  U2YLZPKJ4: "Charlie Foxtrot",
   U2Z9W2KA6: "Charlie Kilo",
   U2ZCMGB52: "Juliet Foxtrot",
   U2ZDJ2ZGV: "Whiskey Hotel",
