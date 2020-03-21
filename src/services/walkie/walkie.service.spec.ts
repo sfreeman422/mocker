@@ -25,5 +25,14 @@ describe("slack-utils", () => {
         `:walkietalkie: *chk* This this Juliet Foxtrot test test Charlie Mike over. *chk* :walkietalkie:`
       );
     });
+
+    it("should handle nonexistent call signs", () => {
+      const talked = walkieService.walkieTalkie(
+        "This this <@2222 | whoever> test test <@2222 | charliemike>"
+      );
+      expect(talked).toBe(
+        `:walkietalkie: *chk* This this <@2222 | whoever> test test <@2222 | charliemike> over. *chk* :walkietalkie:`
+      );
+    });
   });
 });
