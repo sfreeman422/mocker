@@ -13,7 +13,7 @@ export class WalkieService {
 
   public getNatoName(longUserId: string): string {
     const userId = this.getUserId(longUserId);
-    return `${NATO_MAPPINGS[userId]}`;
+    return userId !== "" ? `${NATO_MAPPINGS[userId]}` : longUserId;
   }
 
   public walkieTalkie(text: string) {
