@@ -55,9 +55,7 @@ export class DefineService {
 
     for (let i = 0; i < maxDefinitions; i++) {
       formattedArr.push({
-        text: this.formatUrbanD(
-          `${i + 1}. ${this.capitalizeFirstLetter(defArr[i].definition)}`
-        ),
+        text: this.formatUrbanD(`${i + 1}. ${defArr[i].definition}`),
         mrkdown_in: ["text"]
       });
     }
