@@ -9,9 +9,15 @@ describe("define-utils", () => {
   });
 
   describe("capitalizeFirstLetter()", () => {
-    it("should capitalize the first letter of a given string", () => {
+    it("should capitalize all first letters of a given string", () => {
       expect(defineService.capitalizeFirstLetter("test string")).toBe(
         "Test String"
+      );
+    });
+
+    it("should capitalize only the first letter of the first word when all = false", () => {
+      expect(defineService.capitalizeFirstLetter("test string", false)).toBe(
+        "Test string"
       );
     });
   });

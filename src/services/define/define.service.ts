@@ -20,16 +20,21 @@ export class DefineService {
   /**
    * Capitalizes the first letter of a given sentence.
    */
-  public capitalizeFirstLetter(sentence: string): string {
-    const words = sentence.split(" ");
-    return words
-      .map(word =>
-        word
-          .charAt(0)
-          .toUpperCase()
-          .concat(word.slice(1))
-      )
-      .join(" ");
+  public capitalizeFirstLetter(sentence: string, all = true): string {
+    if (all) {
+      const words = sentence.split(" ");
+      return words
+        .map(word =>
+          word
+            .charAt(0)
+            .toUpperCase()
+            .concat(word.slice(1))
+        )
+        .join(" ");
+    }
+    return (
+      sentence.charAt(0).toUpperCase() + sentence.slice(1, sentence.length)
+    );
   }
 
   /**
@@ -62,7 +67,12 @@ export class DefineService {
     for (let i = 0; i < defArr.length; i++) {
       if (defArr[i].word.toLowerCase() === definedWord.toLowerCase()) {
         formattedArr.push({
-          text: this.formatUrbanD(`${i + 1}. ${defArr[i].definition}`),
+          text: this.formatUrbanD(
+            `${i + 1}. ${this.capitalizeFirstLetter(
+              defArr[i].definition,
+              false
+            )}`
+          ),
           mrkdown_in: ["text"]
         });
       }
