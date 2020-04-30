@@ -1,4 +1,4 @@
-export interface IMuzzled {
+export interface Muzzled {
   suppressionCount: number;
   muzzledBy: string;
   id: number;
@@ -6,21 +6,7 @@ export interface IMuzzled {
   removalFn: NodeJS.Timeout;
 }
 
-export interface IRequestor {
+export interface Requestor {
   muzzleCount: number;
   muzzleCountRemover?: NodeJS.Timeout;
-}
-
-export enum ReportType {
-  Trailing30 = "trailing30",
-  Week = "week",
-  Month = "month",
-  Year = "year",
-  AllTime = "all"
-}
-
-export interface IReportRange {
-  start?: string;
-  end?: string;
-  reportType: ReportType;
 }
