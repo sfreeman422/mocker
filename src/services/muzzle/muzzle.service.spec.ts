@@ -6,7 +6,7 @@ import { Muzzled } from '../../shared/models/muzzle/muzzle-models';
 import { EventRequest, SlackUser } from '../../shared/models/slack/slack-models';
 import { SlackService } from '../slack/slack.service';
 import { WebService } from '../web/web.service';
-import { MAX_SUPPRESSIONS } from './constants';
+import { MAX_SUPPRESSIONS, MAX_WORD_LENGTH } from './constants';
 import * as muzzleUtils from './muzzle-utilities';
 import { MuzzlePersistenceService } from './muzzle.persistence.service';
 import { MuzzleService } from './muzzle.service';
@@ -50,10 +50,24 @@ describe('MuzzleService', () => {
       jest
         .spyOn(MuzzlePersistenceService.getInstance(), 'incrementWordSuppressions')
         .mockResolvedValue(mockResolve as UpdateResult);
+      jest
+        .spyOn(muzzleService, 'getReplacementWord')
+        .mockImplementation((word: string, isFirstWord: boolean, isLastWord: boolean, replacementText: string) => {
+          const isRandomEven = (): boolean => true;
+          replacementText = '..mMm..';
+          const text =
+            isRandomEven() && word.length < MAX_WORD_LENGTH && word !== ' ' && !slackInstance.containsTag(word)
+              ? `*${word}*`
+              : replacementText;
+
+          if ((isFirstWord && !isLastWord) || (!isFirstWord && !isLastWord)) {
+            return `${text} `;
+          }
+          return text;
+        });
     });
 
     it('should always muzzle a tagged user', () => {
-      jest.spyOn(muzzleService, 'getReplacementWord').mockReturnValue('..mMm..');
       const testSentence = '<@U2TKJ> <@JKDSF> <@SDGJSK> <@LSKJDSG> <@lkjdsa> <@LKSJDF> <@SDLJG> <@jrjrjr> <@fudka>';
       expect(muzzleService.muzzle(testSentence, 1)).toBe(
         '..mMm.. ..mMm.. ..mMm.. ..mMm.. ..mMm.. ..mMm.. ..mMm.. ..mMm.. ..mMm..',
