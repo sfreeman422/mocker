@@ -4,6 +4,7 @@ import {
   FilesUploadArguments,
   WebAPICallResult,
   WebClient,
+  ChatPostEphemeralArguments,
 } from '@slack/web-api';
 
 export class WebService {
@@ -57,7 +58,7 @@ export class WebService {
     return this.web.users.list();
   }
 
-  public uploadFile(channel: string, content: string, title?: string): void {
+  public uploadFile(channel: string, content: string, title: string, userId: string): void {
     const muzzleToken: string | undefined = process.env.MUZZLE_BOT_USER_TOKEN;
     const uploadRequest: FilesUploadArguments = {
       channels: channel,
@@ -69,6 +70,17 @@ export class WebService {
       token: muzzleToken,
     };
 
-    this.web.files.upload(uploadRequest).catch(e => console.error(e));
+    this.web.files.upload(uploadRequest).catch((e: any) => {
+      console.error(e);
+      const options: ChatPostEphemeralArguments = {
+        channel,
+        text:
+          e.data.error === 'not_in_channel'
+            ? `Oops! I tried to post the stats you requested but it looks like I haven't been added to that channel yet. Can you please add me? Just type \`@muzzle\` in the channel!`
+            : `Oops! I tried to post the stats you requested but it looks like something went wrong. Please try again later.`,
+        user: userId,
+      };
+      this.web.chat.postEphemeral(options);
+    });
   }
 }
