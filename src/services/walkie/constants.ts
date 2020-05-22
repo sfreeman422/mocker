@@ -26,4 +26,6 @@ export const NATO_MAPPINGS: NatoMapping = {
   U45HMKFJR: 'Charlie Mike',
   U4NFD9J2G: 'Juliet Sierra',
   URU0SCENN: 'Mike Lima',
+  U66P9KLBS: 'Papa Oscar Delta',
+  U96SCNJM8: 'Papa Oscar Bravo',
 };
