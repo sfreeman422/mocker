@@ -48,6 +48,8 @@ export interface Event {
   item_user: string;
   reaction: string;
   item: any; // Needs work, not optional either.
+  blocks: any[]; // same same
+  bot_id: string;
 }
 
 export interface Attachment {

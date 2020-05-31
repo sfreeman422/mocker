@@ -125,32 +125,36 @@ function handleNewUserAdd(): void {
 }
 // Change route to /event/handle instead.
 eventController.post('/muzzle/handle', (req: Request, res: Response) => {
-  const request: EventRequest = req.body;
-  const isNewUserAdded = request.event.type === 'team_join';
-  const isReaction = request.event.type === 'reaction_added' || request.event.type === 'reaction_removed';
-  const isMuzzled = muzzlePersistenceService.isUserMuzzled(request.event.user);
-  const isUserBackfired = backfirePersistenceService.isBackfire(request.event.user);
-  const isUserCounterMuzzled = counterPersistenceService.isCounterMuzzled(request.event.user);
+  if (req.body.challenge) {
+    res.send({ challenge: req.body.challenge });
+  } else {
+    res.status(200).send();
+    const request: EventRequest = req.body;
+    const isNewUserAdded = request.event.type === 'team_join';
+    const isReaction = request.event.type === 'reaction_added' || request.event.type === 'reaction_removed';
+    const isMuzzled = muzzlePersistenceService.isUserMuzzled(request.event.user);
+    const isUserBackfired = backfirePersistenceService.isBackfire(request.event.user);
+    const isUserCounterMuzzled = counterPersistenceService.isCounterMuzzled(request.event.user);
 
-  console.time('respond-to-event');
-  if (isNewUserAdded) {
-    handleNewUserAdd();
-  } else if (isMuzzled && !isReaction) {
-    handleMuzzledMessage(request);
-  } else if (isUserBackfired && !isReaction) {
-    handleBackfire(request);
-  } else if (isUserCounterMuzzled && !isReaction) {
-    handleCounterMuzzle(request);
-  } else if (
-    (muzzleService.shouldBotMessageBeMuzzled(request) ||
-      backfireService.shouldBotMessageBeMuzzled(request) ||
-      counterService.shouldBotMessageBeMuzzled(request)) &&
-    !isReaction
-  ) {
-    handleBotMessage(request);
-  } else if (isReaction) {
-    handleReaction(request);
+    console.time('respond-to-event');
+    if (isNewUserAdded) {
+      handleNewUserAdd();
+    } else if (isMuzzled && !isReaction) {
+      handleMuzzledMessage(request);
+    } else if (isUserBackfired && !isReaction) {
+      handleBackfire(request);
+    } else if (isUserCounterMuzzled && !isReaction) {
+      handleCounterMuzzle(request);
+    } else if (
+      (muzzleService.shouldBotMessageBeMuzzled(request) ||
+        backfireService.shouldBotMessageBeMuzzled(request) ||
+        counterService.shouldBotMessageBeMuzzled(request)) &&
+      !isReaction
+    ) {
+      handleBotMessage(request);
+    } else if (isReaction) {
+      handleReaction(request);
+    }
+    console.timeEnd('respond-to-event');
   }
-  console.timeEnd('respond-to-event');
-  res.send({ challenge: request.challenge });
 });
