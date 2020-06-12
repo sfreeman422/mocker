@@ -94,6 +94,9 @@ ${this.getReportTitle(reportType)}
 
   Top Nemesis by Kills
   ${Table.print(formattedReport.successNemesis)}
+
+  Top Backfires by \%
+  ${Table.print(formattedReport.backfires)}
 `;
   }
 
@@ -143,6 +146,14 @@ ${this.getReportTitle(reportType)}
           Killer: this.slackService.getUserById(instance.requestorId)!.name,
           Victim: this.slackService.getUserById(instance.muzzledId)!.name,
           Kills: instance.killCount,
+        };
+      }),
+      backfires: report.backfires.map((instance: any) => {
+        return {
+          User: this.slackService.getUserById(instance.muzzledId)!.name,
+          Backfires: instance.backfires,
+          Muzzles: instance.muzzles,
+          Percentage: instance.backfirePct,
         };
       }),
     };
