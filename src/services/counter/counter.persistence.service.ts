@@ -4,7 +4,7 @@ import { CounterItem, CounterMuzzle } from '../../shared/models/counter/counter-
 import { getRemainingTime } from '../muzzle/muzzle-utilities';
 import { MuzzlePersistenceService } from '../muzzle/muzzle.persistence.service';
 import { WebService } from '../web/web.service';
-import { COUNTER_TIME } from './constants';
+import { COUNTER_TIME, SINGLE_DAY_MS } from './constants';
 
 export class CounterPersistenceService {
   public static getInstance(): CounterPersistenceService {
@@ -19,18 +19,18 @@ export class CounterPersistenceService {
   private webService: WebService = WebService.getInstance();
   private counters: Map<number, CounterItem> = new Map();
   private counterMuzzles: Map<string, CounterMuzzle> = new Map();
+  private onProbation: string[] = [];
 
-  public addCounter(requestorId: string, counteredUserId: string): Promise<void> {
+  public addCounter(requestorId: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const counter = new Counter();
       counter.requestorId = requestorId;
-      counter.counteredId = counteredUserId;
       counter.countered = false;
 
       await getRepository(Counter)
         .save(counter)
         .then(counterFromDb => {
-          this.setCounterState(requestorId, counteredUserId, counterFromDb.id);
+          this.setCounterState(requestorId, counterFromDb.id);
           resolve();
         })
         .catch(e => reject(`Error on saving counter to DB: ${e}`));
@@ -55,9 +55,12 @@ export class CounterPersistenceService {
     this.counterMuzzles.set(userId, options);
   }
 
-  public async setCounteredToTrue(id: number): Promise<Counter> {
+  public async setCounteredToTrue(id: number, requestorId: string | undefined): Promise<Counter> {
     const counter = await getRepository(Counter).findOne(id);
     counter!.countered = true;
+    if (requestorId) {
+      counter!.counteredId = requestorId;
+    }
     return getRepository(Counter).save(counter as Counter);
   }
 
@@ -73,6 +76,20 @@ export class CounterPersistenceService {
     return this.counterMuzzles.get(userId);
   }
 
+  public canCounter(requestorId: string): boolean {
+    return !this.onProbation.includes(requestorId);
+  }
+
+  public hasCounter(userId: string): boolean {
+    let hasCounter = false;
+    this.counters.forEach(counter => {
+      if (counter.requestorId === userId) {
+        hasCounter = true;
+      }
+    });
+    return hasCounter;
+  }
+
   public counterMuzzle(userId: string, counterId: number): void {
     this.counterMuzzles.set(userId, {
       suppressionCount: 0,
@@ -82,12 +99,12 @@ export class CounterPersistenceService {
   }
 
   /**
-   * Retrieves the counterId for a counter that includes the specified requestorId and userId.
+   * Retrieves the counterId for a counter that includes the specified requestorId.
    */
-  public getCounterByRequestorAndUserId(requestorId: string, userId: string): number | undefined {
+  public getCounterByRequestorId(requestorId: string): number | undefined {
     let counterId;
     this.counters.forEach((item, key) => {
-      if (item.requestorId === requestorId && item.counteredId === userId) {
+      if (item.requestorId === requestorId) {
         counterId = key;
       }
     });
@@ -95,22 +112,28 @@ export class CounterPersistenceService {
     return counterId;
   }
 
-  public async removeCounter(id: number, isUsed: boolean, channel?: string): Promise<void> {
+  public removeCounterPrivileges(userId: string) {
+    this.onProbation.push(userId);
+    setTimeout(() => this.onProbation.splice(this.onProbation.indexOf(userId), 1), SINGLE_DAY_MS);
+  }
+
+  public async removeCounter(id: number, isUsed: boolean, channel: string, requestorId?: string): Promise<void> {
     const counter = this.counters.get(id);
     clearTimeout(counter!.removalFn);
     if (isUsed && channel) {
       this.counters.delete(id);
-      await this.setCounteredToTrue(id).catch(e => console.error('Error during setCounteredToTrue', e));
+      await this.setCounteredToTrue(id, requestorId).catch(e => console.error('Error during setCounteredToTrue', e));
     } else {
       // This whole section is an anti-pattern. Fix this.
       this.counters.delete(id);
       this.counterMuzzle(counter!.requestorId, id);
       this.muzzlePersistenceService.removeMuzzlePrivileges(counter!.requestorId);
+      this.onProbation.push(counter!.requestorId);
       this.webService.sendMessage(
         '#general',
-        `:flesh: <@${counter!.requestorId}> lives in fear of <@${
-          counter!.counteredId
-        }> and is now muzzled and has lost muzzle privileges for one hour. :flesh:`,
+        `:flesh: <@${
+          counter!.requestorId
+        }> lives in fear and is now muzzled, has lost muzzle privileges for one hour and cannot use counter again for 24 hours. :flesh:`,
       );
     }
   }
@@ -119,10 +142,9 @@ export class CounterPersistenceService {
     this.counterMuzzles.delete(userId);
   }
 
-  private setCounterState(requestorId: string, userId: string, counterId: number): void {
+  private setCounterState(requestorId: string, counterId: number): void {
     this.counters.set(counterId, {
       requestorId,
-      counteredId: userId,
       removalFn: setTimeout(() => this.removeCounter(counterId, false, '#general'), COUNTER_TIME),
     });
   }
