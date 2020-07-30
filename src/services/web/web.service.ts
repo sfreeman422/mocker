@@ -45,7 +45,7 @@ export class WebService {
    * Handles sending messages to the chat.
    */
   public sendMessage(channel: string, text: string): void {
-    const token: string | undefined = process.env.MUZZLE_BOT_TOKEN;
+    const token: string | undefined = process.env.MUZZLE_BOT_USER_TOKEN;
     const postRequest: ChatPostMessageArguments = {
       token,
       channel,
@@ -56,6 +56,10 @@ export class WebService {
 
   public getAllUsers(): Promise<WebAPICallResult> {
     return this.web.users.list();
+  }
+
+  public getAllChannels(): Promise<any> {
+    return this.web.conversations.list().catch(e => console.log(e));
   }
 
   public uploadFile(channel: string, content: string, title: string, userId: string): void {

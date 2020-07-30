@@ -6,6 +6,10 @@ import { MuzzlePersistenceService } from '../muzzle/muzzle.persistence.service';
 import { WebService } from '../web/web.service';
 import { COUNTER_TIME, SINGLE_DAY_MS } from './constants';
 
+// This service does not yet use redis since i need to get a better understanding
+// Of the pub/sub model there. The reason I did not convert to redis is because
+// the stateful data here is already in the relational DB and because
+// i need to figure out how to call a callback when a key expires in the db.
 export class CounterPersistenceService {
   public static getInstance(): CounterPersistenceService {
     if (!CounterPersistenceService.instance) {
@@ -21,7 +25,7 @@ export class CounterPersistenceService {
   private counterMuzzles: Map<string, CounterMuzzle> = new Map();
   private onProbation: string[] = [];
 
-  public addCounter(requestorId: string): Promise<void> {
+  public addCounter(requestorId: string, teamId: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const counter = new Counter();
       counter.requestorId = requestorId;
@@ -30,7 +34,7 @@ export class CounterPersistenceService {
       await getRepository(Counter)
         .save(counter)
         .then(counterFromDb => {
-          this.setCounterState(requestorId, counterFromDb.id);
+          this.setCounterState(requestorId, counterFromDb.id, teamId);
           resolve();
         })
         .catch(e => reject(`Error on saving counter to DB: ${e}`));
@@ -112,12 +116,18 @@ export class CounterPersistenceService {
     return counterId;
   }
 
-  public removeCounterPrivileges(userId: string) {
+  public removeCounterPrivileges(userId: string): void {
     this.onProbation.push(userId);
     setTimeout(() => this.onProbation.splice(this.onProbation.indexOf(userId), 1), SINGLE_DAY_MS);
   }
 
-  public async removeCounter(id: number, isUsed: boolean, channel: string, requestorId?: string): Promise<void> {
+  public async removeCounter(
+    id: number,
+    isUsed: boolean,
+    channel: string,
+    teamId: string,
+    requestorId?: string,
+  ): Promise<void> {
     const counter = this.counters.get(id);
     clearTimeout(counter!.removalFn);
     if (isUsed && channel) {
@@ -127,8 +137,8 @@ export class CounterPersistenceService {
       // This whole section is an anti-pattern. Fix this.
       this.counters.delete(id);
       this.counterMuzzle(counter!.requestorId, id);
-      this.muzzlePersistenceService.removeMuzzlePrivileges(counter!.requestorId);
-      this.onProbation.push(counter!.requestorId);
+      this.muzzlePersistenceService.removeMuzzlePrivileges(counter!.requestorId, teamId);
+      this.removeCounterPrivileges(counter!.requestorId);
       this.webService.sendMessage(
         '#general',
         `:flesh: <@${
@@ -142,10 +152,10 @@ export class CounterPersistenceService {
     this.counterMuzzles.delete(userId);
   }
 
-  private setCounterState(requestorId: string, counterId: number): void {
+  private setCounterState(requestorId: string, counterId: number, teamId: string): void {
     this.counters.set(counterId, {
       requestorId,
-      removalFn: setTimeout(() => this.removeCounter(counterId, false, '#general'), COUNTER_TIME),
+      removalFn: setTimeout(() => this.removeCounter(counterId, false, '#general', teamId), COUNTER_TIME),
     });
   }
 }

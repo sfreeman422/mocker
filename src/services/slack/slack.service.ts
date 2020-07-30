@@ -2,6 +2,7 @@ import axios from 'axios';
 import { ChannelResponse, SlackUser } from '../../shared/models/slack/slack-models';
 import { WebService } from '../web/web.service';
 import { USER_ID_REGEX } from './constants';
+import { SlackPersistenceService } from './slack.persistence.service';
 
 export class SlackService {
   public static getInstance(): SlackService {
@@ -11,21 +12,13 @@ export class SlackService {
     return SlackService.instance;
   }
   private static instance: SlackService;
-  public userList: SlackUser[] = [];
   private web: WebService = WebService.getInstance();
+  private persistenceService: SlackPersistenceService = SlackPersistenceService.getInstance();
 
   public sendResponse(responseUrl: string, response: ChannelResponse): void {
     axios
       .post(responseUrl, response)
       .catch((e: Error) => console.error(`Error responding: ${e.message} at ${responseUrl}`));
-  }
-
-  /**
-   * Gets the username of the user by id.
-   */
-  public getUserName(userId: string): string {
-    const userObj: SlackUser | undefined = this.getUserById(userId);
-    return userObj ? userObj.name : '';
   }
 
   /**
@@ -41,10 +34,10 @@ export class SlackService {
   }
 
   /**
-   * Returns the user object by id
+   * Returns the user name by id
    */
-  public getUserById(userId: string): SlackUser | undefined {
-    return this.userList.find((user: SlackUser) => user.id === userId);
+  public getUserNameById(userId: string, teamId: string): Promise<string | undefined> {
+    return this.persistenceService.getUserById(userId, teamId).then(user => user?.name);
   }
 
   /**
@@ -80,21 +73,30 @@ export class SlackService {
     return text.includes('<!channel>') || text.includes('<!here>') || !!this.getUserId(text);
   }
 
+  public getAllChannels(): void {
+    this.web.getAllChannels().then(result => this.persistenceService.saveChannels(result.channels));
+  }
+
+  public async getChannelName(channelId: string, teamId: string): Promise<string> {
+    const channel = await this.persistenceService.getChannelById(channelId, teamId);
+    return channel?.name || '';
+  }
+
   /**
    * Retrieves a list of all users.
    */
-  public async getAllUsers(): Promise<void> {
+  public getAllUsers(): void {
     console.log('Retrieving new user list...');
-    this.userList = (await this.web
+    this.web
       .getAllUsers()
       .then(resp => {
         console.log('New user list has been retrieved!');
-        return resp.members as SlackUser[];
+        this.persistenceService.saveUsers(resp.members as SlackUser[]);
       })
       .catch(e => {
         console.error('Failed to retrieve users', e);
         console.error('Retrying in 5 seconds...');
         setTimeout(() => this.getAllUsers(), 5000);
-      })) as SlackUser[];
+      });
   }
 }
