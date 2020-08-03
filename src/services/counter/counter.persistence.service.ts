@@ -29,6 +29,7 @@ export class CounterPersistenceService {
     return new Promise(async (resolve, reject) => {
       const counter = new Counter();
       counter.requestorId = requestorId;
+      counter.teamId = teamId;
       counter.countered = false;
 
       await getRepository(Counter)
