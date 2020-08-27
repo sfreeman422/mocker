@@ -58,6 +58,16 @@ export class ReactionPersistenceService {
       .catch(e => e);
   }
 
+  public getUserRep(userId: string, teamId: string) {
+    return getRepository(Rep)
+      .findOne({ user: userId, teamId })
+      .then(rep => rep?.rep);
+  }
+
+  public spendRep(userId: string, teamId: string, price: number) {
+    return getRepository(Rep).decrement({ user: userId, teamId }, 'rep', price);
+  }
+
   private async isRepUserPresent(affectedUser: string, teamId: string): Promise<boolean | void> {
     return getRepository(Rep)
       .findOne({ user: affectedUser, teamId })
