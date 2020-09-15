@@ -157,44 +157,38 @@ export class StorePersistenceService {
 
   // TODO: Fix this query.
   async useItem(itemId: number, userId: string, teamId: string, userIdForItem?: string): Promise<string> {
-    // really janky way to enforce that guardian angel can only be used on others.
-    if ((!userIdForItem || userId === userIdForItem) && itemId === 2) {
-      return `Unable to use your item. You must specify who this item is used on and that user cannot be you.`;
-    }
     const usingUser: SlackUser | undefined = await getRepository(SlackUser).findOne({ slackId: userId, teamId });
-    console.log(usingUser);
     const receivingUser: SlackUser | undefined = await getRepository(SlackUser).findOne({
       slackId: userIdForItem,
       teamId,
     });
-    console.log(receivingUser);
     const itemById: Item | undefined = await getRepository(Item).findOne(itemId);
-    console.log(itemById);
     const inventoryItem = (await getRepository(InventoryItem).findOne({
       owner: usingUser,
       item: itemById,
     })) as InventoryItem;
-    console.log(inventoryItem);
-    const keyName = this.getRedisKeyName(receivingUser ? receivingUser.slackId : userId, teamId, itemId);
-    const existingKey = await this.redisService.getPattern(keyName);
-    if (existingKey.length) {
-      if (itemById?.isStackable) {
+    if (itemById?.isEffect) {
+      const keyName = this.getRedisKeyName(receivingUser ? receivingUser.slackId : userId, teamId, itemId);
+      const existingKey = await this.redisService.getPattern(keyName);
+      if (existingKey.length) {
+        if (itemById?.isStackable) {
+          this.redisService.setValueWithExpire(
+            `${keyName}.${existingKey.length}`,
+            `${userId}-${teamId}`,
+            'PX',
+            getMsForSpecifiedRange(itemById.min_active_ms, itemById.max_active_ms),
+          );
+        } else if (!itemById?.isStackable) {
+          return `Unable to use your item. This item is not stackable.`;
+        }
+      } else if (!existingKey.length && itemById) {
         this.redisService.setValueWithExpire(
-          `${keyName}.${existingKey.length}`,
+          keyName,
           `${userId}-${teamId}`,
           'PX',
           getMsForSpecifiedRange(itemById.min_active_ms, itemById.max_active_ms),
         );
-      } else if (!itemById?.isStackable) {
-        return `Unable to use your item. This item is not stackable.`;
       }
-    } else if (!existingKey.length && itemById) {
-      this.redisService.setValueWithExpire(
-        keyName,
-        `${userId}-${teamId}`,
-        'PX',
-        getMsForSpecifiedRange(itemById.min_active_ms, itemById.max_active_ms),
-      );
     }
 
     const usedItem = new UsedItem();
@@ -214,6 +208,12 @@ export class StorePersistenceService {
 
   getUserOfUsedItem(key: string) {
     return this.redisService.getValue(key);
+  }
+
+  isUserRequired(itemId: number) {
+    return getRepository(Item)
+      .findOne({ id: itemId })
+      .then(item => item?.requiresUser);
   }
 
   async getInventory(userId: string, teamId: string): Promise<Item[]> {
