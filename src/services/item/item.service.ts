@@ -11,7 +11,7 @@ export class ItemService {
     {
       id: 1,
       interaction: async (userId: string, teamId: string, usedOnUser: string, _channel: string): Promise<string> => {
-        return await this.storeService.useItem('2', userId, teamId, usedOnUser);
+        return await this.storeService.useItem('1', userId, teamId, usedOnUser);
       },
     },
     {
