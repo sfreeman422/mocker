@@ -210,13 +210,19 @@ export class StorePersistenceService {
     return this.redisService.getValue(key);
   }
 
-  isUserRequired(itemId: number) {
+  isUserRequired(itemId: number): Promise<boolean> {
     return getRepository(Item)
       .findOne({ id: itemId })
-      .then(item => item?.requiresUser);
+      .then(item => {
+        if (item) {
+          return item.requiresUser;
+        } else {
+          return false;
+        }
+      });
   }
 
-  async getInventory(userId: string, teamId: string): Promise<Item[]> {
+  async getInventory(userId: string, teamId: string): Promise<any[]> {
     const query = `SELECT inventory_item.itemId, item.name, item.description FROM inventory_item INNER JOIN item ON inventory_item.itemId=item.id WHERE inventory_item.ownerId=(SELECT id FROM slack_user WHERE slackId='${userId}' AND teamId='${teamId}');`;
     return getManager().query(query);
   }
