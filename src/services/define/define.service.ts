@@ -55,7 +55,9 @@ export class DefineService {
     for (let i = 0; i < defArr.length; i++) {
       if (defArr[i].word.toLowerCase() === definedWord.toLowerCase()) {
         formattedArr.push({
-          text: this.formatUrbanD(`${i + 1}. ${this.capitalizeFirstLetter(defArr[i].definition, false)}`),
+          text: this.formatUrbanD(
+            `${formattedArr.length + 1}. ${this.capitalizeFirstLetter(defArr[i].definition, false)}`,
+          ),
           // eslint-disable-next-line @typescript-eslint/camelcase
           mrkdown_in: ['text'],
         });
