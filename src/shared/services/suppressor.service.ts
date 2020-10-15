@@ -132,7 +132,8 @@ export class SuppressorService {
     id: number,
     persistenceService?: BackFirePersistenceService | MuzzlePersistenceService,
   ): string {
-    const words = text.split(' ');
+    const sentence = text.trim();
+    const words = sentence.split(' ');
 
     let returnText = '';
     let wordsSuppressed = 0;
