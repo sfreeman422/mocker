@@ -7,6 +7,7 @@ import { CounterPersistenceService } from '../../services/counter/counter.persis
 import { WebService } from '../../services/web/web.service';
 import { isRandomEven } from '../../services/muzzle/muzzle-utilities';
 import { MAX_WORD_LENGTH, REPLACEMENT_TEXT } from '../../services/muzzle/constants';
+import { TranslationService } from './translation.service';
 
 export class SuppressorService {
   public webService = WebService.getInstance();
@@ -14,6 +15,7 @@ export class SuppressorService {
   public backfirePersistenceService = BackFirePersistenceService.getInstance();
   public muzzlePersistenceService = MuzzlePersistenceService.getInstance();
   public counterPersistenceService = CounterPersistenceService.getInstance();
+  public translationService = new TranslationService();
 
   public findUserIdInBlocks(obj: any, regEx: RegExp): string | undefined {
     let id;
@@ -122,6 +124,28 @@ export class SuppressorService {
       return `${text} `;
     }
     return text;
+  }
+
+  public logTranslateSuppression(
+    text: string,
+    id: number,
+    persistenceService?: BackFirePersistenceService | MuzzlePersistenceService,
+  ): void {
+    const sentence = text.trim();
+    const words = sentence.split(' ');
+    let wordsSuppressed = 0;
+    let charactersSuppressed = 0;
+
+    for (let i = 0; i < words.length; i++) {
+      wordsSuppressed++;
+      charactersSuppressed += words[i].length;
+    }
+
+    if (persistenceService) {
+      persistenceService.incrementMessageSuppressions(id);
+      persistenceService.incrementCharacterSuppressions(id, charactersSuppressed);
+      persistenceService.incrementWordSuppressions(id, wordsSuppressed);
+    }
   }
 
   /**
