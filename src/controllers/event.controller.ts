@@ -1,4 +1,5 @@
 import express, { Request, Response, Router } from 'express';
+import { ActivityPersistenceService } from '../services/activity/activity.persistence.service';
 import { BackFirePersistenceService } from '../services/backfire/backfire.persistence.service';
 import { BackfireService } from '../services/backfire/backfire.service';
 import { CounterPersistenceService } from '../services/counter/counter.persistence.service';
@@ -25,6 +26,7 @@ const suppressorService = new SuppressorService();
 const muzzlePersistenceService = MuzzlePersistenceService.getInstance();
 const backfirePersistenceService = BackFirePersistenceService.getInstance();
 const counterPersistenceService = CounterPersistenceService.getInstance();
+const activityPersistenceService = ActivityPersistenceService.getInstance();
 
 async function handleMuzzledMessage(request: EventRequest): Promise<void> {
   const containsTag = slackService.containsTag(request.event.text);
@@ -116,6 +118,11 @@ function handleBotMessage(request: EventRequest): void {
   webService.deleteMessage(request.event.channel, request.event.ts);
 }
 
+function deleteMessage(request: EventRequest): void {
+  console.log('Someone talked in #hot who was not a bot. Suppressing...');
+  webService.deleteMessage(request.event.channel, request.event.ts);
+}
+
 function handleReaction(request: EventRequest): void {
   reactionService.handleReaction(request.event, request.event.type === 'reaction_added', request.team_id);
 }
@@ -125,16 +132,22 @@ function handleNewUserAdd(): void {
 }
 
 function handleNewChannelCreated(): void {
-  slackService.getAllChannels();
+  slackService.getAndSaveAllChannels();
+}
+
+function handleActivity(request: EventRequest): void {
+  activityPersistenceService.logActivity(request);
+  activityPersistenceService.updateLatestHotness();
 }
 // Change route to /event/handle instead.
 eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
   if (req.body.challenge) {
     res.send({ challenge: req.body.challenge });
   } else {
+    console.time('respond-to-event');
     res.status(200).send();
     const request: EventRequest = req.body;
-    console.log(request);
+    // console.log(request);
     const isNewUserAdded = request.event.type === 'team_join';
     const isNewChannelCreated = request.event.type === 'channel_created';
     const isReaction = request.event.type === 'reaction_added' || request.event.type === 'reaction_removed';
@@ -142,8 +155,7 @@ eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
     const isUserBackfired = await backfirePersistenceService.isBackfire(request.event.user, request.team_id);
     // TO DO: Add teamId to this call once counterPersistenceService uses redis.
     const isUserCounterMuzzled = await counterPersistenceService.isCounterMuzzled(request.event.user);
-
-    console.time('respond-to-event');
+    const isInHotAndNotBot = request.event.user !== 'ULG8SJRFF' && request.event.channel === 'C027YMYC5CJ';
     if (isNewUserAdded) {
       handleNewUserAdd();
     } else if (isNewChannelCreated) {
@@ -158,7 +170,10 @@ eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
       handleBotMessage(request);
     } else if (isReaction) {
       handleReaction(request);
+    } else if (isInHotAndNotBot) {
+      deleteMessage(request);
     }
+    handleActivity(request);
     console.timeEnd('respond-to-event');
   }
 });

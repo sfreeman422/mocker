@@ -106,16 +106,22 @@ export class MuzzleService extends SuppressorService {
       const suppressions = await this.muzzlePersistenceService.getSuppressions(userId, teamId);
       if (!suppressions || (suppressions && +suppressions < MAX_SUPPRESSIONS)) {
         await this.muzzlePersistenceService.incrementStatefulSuppressions(userId, teamId);
-        let suppressedMessage: any = await this.translationService.translate(text).catch(e => {
-          console.error('error on translation');
-          console.error(e);
-          return null;
-        });
-
-        if (!!suppressedMessage) {
-          await this.logTranslateSuppression(text, +muzzle, this.muzzlePersistenceService);
+        const language = this.translationService.getRandomLanguage();
+        const wordsWithReplacementIfNeeded = text
+          .split(' ')
+          .map(word => (word.length > 10 ? '..mMm..' : word))
+          .join(' ');
+        const suppressedMessage = await this.translationService
+          .translate(wordsWithReplacementIfNeeded, language)
+          .catch(e => {
+            console.error('error on translation');
+            console.error(e);
+            return null;
+          });
+        if (suppressedMessage === null) {
+          this.sendSuppressedMessage(text, +muzzle, this.muzzlePersistenceService);
         } else {
-          suppressedMessage = this.sendSuppressedMessage(text, +muzzle, this.muzzlePersistenceService);
+          await this.logTranslateSuppression(text, +muzzle, this.muzzlePersistenceService);
         }
 
         this.webService.sendMessage(channel, `<@${userId}> says "${suppressedMessage}"`);

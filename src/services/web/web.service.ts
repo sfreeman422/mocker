@@ -5,6 +5,7 @@ import {
   WebAPICallResult,
   WebClient,
   ChatPostEphemeralArguments,
+  ChatUpdateArguments,
 } from '@slack/web-api';
 
 const MAX_RETRIES = 5;
@@ -51,14 +52,67 @@ export class WebService {
   /**
    * Handles sending messages to the chat.
    */
-  public sendMessage(channel: string, text: string): void {
+  public sendMessage(channel: string, text: string): Promise<WebAPICallResult> {
     const token: string | undefined = process.env.MUZZLE_BOT_USER_TOKEN;
     const postRequest: ChatPostMessageArguments = {
       token,
       channel,
       text,
     };
-    this.web.chat.postMessage(postRequest).catch(e => console.error(e));
+    return this.web.chat
+      .postMessage(postRequest)
+      .then(result => result)
+      .catch(e => {
+        console.error(e);
+        throw new Error(e);
+      });
+  }
+
+  public sendBlockMessage(channel: string, text: string) {
+    const token = process.env.MUZZLE_BOT_USER_TOKEN;
+    const timestamp = Math.floor(new Date().getTime() / 1000);
+    const postRequest: ChatPostMessageArguments = {
+      token,
+      channel,
+      text,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text,
+          },
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `<!date^${timestamp}^Posted {date_num} {time_secs}|Posted at some point today>`,
+              verbatim: false,
+            },
+          ],
+        },
+      ],
+    };
+    return this.web.chat
+      .postMessage(postRequest)
+      .then(result => result)
+      .catch(e => {
+        console.error(e);
+        throw new Error(e);
+      });
+  }
+
+  public editMessage(channel: string, text: string, ts: string): void {
+    const token = process.env.MUZZLE_BOT_USER_TOKEN;
+    const update: ChatUpdateArguments = {
+      channel,
+      text,
+      ts,
+      token,
+    };
+    this.web.chat.update(update).catch(e => console.error(e));
   }
 
   public getAllUsers(): Promise<WebAPICallResult> {
@@ -74,7 +128,7 @@ export class WebService {
     const uploadRequest: FilesUploadArguments = {
       channels: channel,
       content,
-      filetype: 'markdown',
+      filetype: 'auto',
       title,
       // eslint-disable-next-line @typescript-eslint/camelcase
       initial_comment: title,
