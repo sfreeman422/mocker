@@ -1,4 +1,4 @@
-import { EventRequest } from '../models/slack/slack-models';
+import { EventRequest, SlackUser } from '../models/slack/slack-models';
 import { USER_ID_REGEX } from '../../services/counter/constants';
 import { SlackService } from '../../services/slack/slack.service';
 import { BackFirePersistenceService } from '../../services/backfire/backfire.persistence.service';
@@ -8,6 +8,7 @@ import { WebService } from '../../services/web/web.service';
 import { isRandomEven } from '../../services/muzzle/muzzle-utilities';
 import { MAX_WORD_LENGTH, REPLACEMENT_TEXT } from '../../services/muzzle/constants';
 import { TranslationService } from './translation.service';
+import moment from 'moment';
 
 export class SuppressorService {
   public webService = WebService.getInstance();
@@ -16,6 +17,10 @@ export class SuppressorService {
   public muzzlePersistenceService = MuzzlePersistenceService.getInstance();
   public counterPersistenceService = CounterPersistenceService.getInstance();
   public translationService = new TranslationService();
+
+  public isBot(userId: string, teamId: string): Promise<boolean | undefined> {
+    return this.slackService.getUserById(userId, teamId).then(user => !!user?.isBot);
+  }
 
   public findUserIdInBlocks(obj: any, regEx: RegExp): string | undefined {
     let id;
@@ -30,6 +35,30 @@ export class SuppressorService {
         id = this.findUserIdInBlocks(obj[key], regEx);
       }
     });
+    return id;
+  }
+
+  // Built for spoiler only. This will not work on other block apps. Should improve this to be universal.
+  public async findUserInBlocks(blocks: any, users?: SlackUser[]): Promise<string | undefined> {
+    const allUsers: SlackUser[] = users ? users : await this.slackService.getAllUsers();
+    console.log(blocks);
+    let id;
+    const firstBlock = blocks[0]?.elements?.[0];
+    if (firstBlock) {
+      Object.keys(firstBlock).forEach(key => {
+        if (typeof firstBlock[key] === 'string') {
+          allUsers.forEach(user => {
+            console.log(user);
+            if (firstBlock[key].includes(user.name)) {
+              id = user.id;
+            }
+          });
+        }
+        if (typeof firstBlock[key] === 'object') {
+          id = this.findUserInBlocks(firstBlock[key], allUsers);
+        }
+      });
+    }
     return id;
   }
 
@@ -66,21 +95,33 @@ export class SuppressorService {
    * Determines whether or not a bot message should be removed.
    */
   public async shouldBotMessageBeMuzzled(request: EventRequest): Promise<boolean> {
-    if (
-      (request.event.bot_id || request.event.subtype === 'bot_message') &&
-      ((request.event.username && request.event.username.toLowerCase() !== 'muzzle') ||
-        (request.event.bot_profile && request.event.bot_profile.name.toLowerCase() !== 'muzzle'))
-    ) {
+    const isBot = request.event.bot_id
+      ? await this.slackService
+          .getBotByBotId(request.event.bot_id, request.team_id)
+          .then(user => user?.name !== 'muzzle')
+      : false;
+
+    if (isBot) {
       let userIdByEventText;
       let userIdByAttachmentText;
       let userIdByAttachmentPretext;
       let userIdByCallbackId;
       let userIdByBlocks;
 
+      console.log('Bot message found');
+
       if (request.event.blocks) {
-        const hasIdInBlock = this.findUserIdInBlocks(request.event.blocks, USER_ID_REGEX);
-        if (hasIdInBlock) {
-          userIdByBlocks = this.slackService.getUserId(hasIdInBlock);
+        console.log('Has blocks');
+        console.log(request.event.blocks);
+        const userId = this.findUserIdInBlocks(request.event.blocks, USER_ID_REGEX);
+        const userName = await this.findUserInBlocks(request.event.blocks);
+        console.log('ID found for spoiler muzzle:' + userName);
+        if (userId) {
+          userIdByBlocks = this.slackService.getUserId(userId);
+        }
+
+        if (userName) {
+          userIdByBlocks = userName;
         }
       }
 
@@ -185,5 +226,18 @@ export class SuppressorService {
     }
 
     return returnText;
+  }
+
+  public async shouldBackfire(requestorId: string, teamId: string): Promise<boolean> {
+    const start = moment()
+      .startOf('day')
+      .subtract(7, 'days')
+      .format('YYYY-MM-DD HH:mm:ss');
+    const end = moment().format('YYYY-MM-DD HH:mm:ss');
+    const muzzles = await this.muzzlePersistenceService.getMuzzlesByTimePeriod(requestorId, teamId, start, end);
+    console.log(`Number of muzzles for ${requestorId}: ${muzzles}`);
+    const chanceOfBackfire = 0.05 + muzzles * 0.025;
+    console.log(`Chance of Backfire for ${requestorId}: ${chanceOfBackfire}`);
+    return Math.random() <= chanceOfBackfire;
   }
 }

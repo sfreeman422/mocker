@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ChannelResponse, SlackUser } from '../../shared/models/slack/slack-models';
+import { SlackUser as SlackUserFromDB } from '../../shared/db/models/SlackUser';
 import { WebService } from '../web/web.service';
 import { USER_ID_REGEX } from './constants';
 import { SlackPersistenceService } from './slack.persistence.service';
@@ -85,19 +86,31 @@ export class SlackService {
   /**
    * Retrieves a list of all users.
    */
-  public getAllUsers(): void {
+  public getAllUsers(shouldSave?: boolean): Promise<SlackUser[]> {
     console.log('Retrieving new user list...');
-    this.web
+    return this.web
       .getAllUsers()
       .then(resp => {
         console.log('New user list has been retrieved!');
-        this.persistenceService.saveUsers(resp.members as SlackUser[]);
+        if (shouldSave) {
+          this.persistenceService.saveUsers(resp.members as SlackUser[]);
+        }
+        return resp.members as SlackUser[];
       })
       .catch(e => {
         console.error('Failed to retrieve users', e);
         console.timeEnd('retrieved user list in: ');
         console.error('Retrying in 5 seconds...');
         setTimeout(() => this.getAllUsers(), 5000);
+        throw new Error('Unable to retrieve users');
       });
+  }
+
+  public getBotByBotId(botId: string, teamId: string): Promise<SlackUserFromDB | undefined> {
+    return this.persistenceService.getBotByBotId(botId, teamId);
+  }
+
+  public getUserById(userId: string, teamId: string): Promise<SlackUserFromDB | undefined> {
+    return this.persistenceService.getUserById(userId, teamId);
   }
 }

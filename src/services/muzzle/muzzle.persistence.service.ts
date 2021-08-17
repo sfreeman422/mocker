@@ -81,16 +81,16 @@ export class MuzzlePersistenceService {
       this.getRedisKeyName(requestorId, teamId, MuzzleRedisTypeEnum.Requestor),
     );
     const requests: number = numberOfRequests ? +numberOfRequests : 0;
-    const newNumber = requests + 1;
+    const newRequests = requests + 1;
     if (!numberOfRequests) {
       this.redis.setValueWithExpire(
         this.getRedisKeyName(requestorId, teamId, MuzzleRedisTypeEnum.Requestor),
-        newNumber.toString(),
+        newRequests.toString(),
         'EX',
         MAX_TIME_BETWEEN_MUZZLES,
       );
     } else if (requests < MAX_MUZZLES) {
-      this.redis.setValue(this.getRedisKeyName(requestorId, teamId, MuzzleRedisTypeEnum.Requestor), newNumber);
+      this.redis.setValue(this.getRedisKeyName(requestorId, teamId, MuzzleRedisTypeEnum.Requestor), newRequests);
     }
   }
 
@@ -181,5 +181,12 @@ export class MuzzlePersistenceService {
 
   private getRedisKeyName(userId: string, teamId: string, userType: MuzzleRedisTypeEnum, withSuppressions = false) {
     return `muzzle.${userType}.${userId}-${teamId}${withSuppressions ? '.suppressions' : ''}`;
+  }
+
+  public getMuzzlesByTimePeriod(userId: string, teamId: string, start: string, end: string) {
+    const query = `SELECT COUNT(*) as count FROM muzzle WHERE createdAt >= '${start}' AND createdAt < '${end}' AND teamId='${teamId}' AND requestorId='${userId}';`;
+    return getRepository(Muzzle)
+      .query(query)
+      .then(res => (res[0].count ? parseInt(res[0].count) : 0));
   }
 }
