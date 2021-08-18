@@ -98,7 +98,7 @@ export class SuppressorService {
     const isBot = request.event.bot_id
       ? await this.slackService
           .getBotByBotId(request.event.bot_id, request.team_id)
-          .then(user => user?.name !== 'muzzle')
+          .then(user => user?.name !== 'muzzle' && user?.slackId !== 'ULG8SJRFF')
       : false;
 
     if (isBot) {
