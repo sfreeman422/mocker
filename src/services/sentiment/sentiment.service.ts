@@ -41,6 +41,7 @@ export class SentimentService {
     const end = moment().format('YYYY-MM-DD HH:mm:ss');
     const averageSentiment = await this.getAvgSentimentForTimePeriod(userId, teamId, start, end);
     console.log(averageSentiment);
+    console.log(text);
     // if (averageSentiment < 0) {
     //   console.log(`${userId} should be muzzled because his sentiment analysis score was: ${averageSentiment}`);
     // }
