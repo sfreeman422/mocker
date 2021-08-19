@@ -11,7 +11,7 @@ export class Sentiment {
   @Column()
   public teamId!: string;
 
-  @Column()
+  @Column({ type: 'decimal', precision: 5, scale: 2 })
   public sentiment!: number;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
