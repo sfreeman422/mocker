@@ -7,9 +7,7 @@ import { StorePersistenceService } from '../store/store.persistence.service';
 export class MuzzleService extends SuppressorService {
   private counterService = new CounterService();
   private storePersistenceService = StorePersistenceService.getInstance();
-  /**
-   * Adds a user to the muzzled map and sets a timeout to remove the muzzle within a random time of 30 seconds to 3 minutes
-   */
+
   public async addUserToMuzzled(userId: string, requestorId: string, teamId: string, channel: string): Promise<string> {
     const shouldBackFire = await this.shouldBackfire(requestorId, teamId);
     const userName = await this.slackService.getUserNameById(userId, teamId);
