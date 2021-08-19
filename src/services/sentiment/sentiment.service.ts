@@ -14,9 +14,6 @@ export class SentimentService {
 
   public async analyzeSentimentAndStore(userId: string, teamId: string, text: string): Promise<InsertResult> {
     const emotionalScore: AnalysisResult = this.sentiment.analyze(text);
-    console.log('user', userId);
-    console.log('team', teamId);
-    console.log('text', text);
     console.log(emotionalScore);
     const sentimentModel = new SentimentDB();
     sentimentModel.sentiment = emotionalScore.comparative;
