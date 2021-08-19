@@ -25,7 +25,7 @@ export class SentimentService {
   }
 
   getAvgSentimentForTimePeriod(userId: string, teamId: string, start: string, end: string): Promise<any> {
-    const query = `select AVG(sentiment.sentiment), COUNT(sentiment.userId), sentiment.userId, slack_user.isBot FROM sentiment INNER JOIN slack_user ON slack_user.slackId = sentiment.userId WHERE slack_user.isBot != 1 AND sentiment.userId = '${userId}' AND sentiment.teamId = '${teamId} AND sentiment.createdAt >= '${start}' AND sentiment.createdAt < '${end}' GROUP BY sentiment.userId, slack_user.isBot;`;
+    const query = `select AVG(sentiment.sentiment), COUNT(sentiment.userId), sentiment.userId, slack_user.isBot FROM sentiment INNER JOIN slack_user ON slack_user.slackId = sentiment.userId WHERE slack_user.isBot != 1 AND sentiment.userId = '${userId}' AND sentiment.teamId = '${teamId}' AND sentiment.createdAt >= '${start}' AND sentiment.createdAt < '${end}' GROUP BY sentiment.userId, slack_user.isBot;`;
     return getRepository(SentimentDB)
       .query(query)
       .then(result => {
