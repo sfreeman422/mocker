@@ -8,7 +8,7 @@ export class SentimentService {
 
   public performSentimentAnalysis(userId: string, teamId: string, text: string): void {
     this.analyzeSentimentAndStore(userId, teamId, text).then(() => {
-      this.autoMuzzleIfNecessary(userId, teamId, text);
+      this.autoMuzzleIfNecessary(userId, teamId);
     });
   }
 
@@ -36,7 +36,7 @@ export class SentimentService {
       });
   }
 
-  public async autoMuzzleIfNecessary(userId: string, teamId: string, text: string): Promise<void> {
+  public async autoMuzzleIfNecessary(userId: string, teamId: string): Promise<void> {
     const start = moment()
       .subtract(3, 'minutes')
       .format('YYYY-MM-DD HH:mm:ss');
