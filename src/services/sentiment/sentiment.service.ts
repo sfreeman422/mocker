@@ -2,12 +2,11 @@ import moment from 'moment';
 import Sentiment, { AnalysisResult } from 'sentiment';
 import { getRepository, InsertResult } from 'typeorm';
 import { Sentiment as SentimentDB } from '../../shared/db/models/Sentiment';
-import { SuppressorService } from '../../shared/services/suppressor.service';
 
-export class SentimentService extends SuppressorService {
+export class SentimentService {
   sentiment = new Sentiment();
 
-  public async performSentimentAnalysis(userId: string, teamId: string, text: string): void {
+  public performSentimentAnalysis(userId: string, teamId: string, text: string): void {
     this.analyzeSentimentAndStore(userId, teamId, text).then(() => {
       this.autoMuzzleIfNecessary(userId, teamId, text);
     });
@@ -26,7 +25,7 @@ export class SentimentService extends SuppressorService {
   }
 
   getAvgSentimentForTimePeriod(userId: string, teamId: string, start: string, end: string): Promise<any> {
-    const query = `SELECT AVG(sentiment) FROM sentiment WHERE userId='${userId}' AND teamId='${teamId}' AND createdAt >= '${start}' AND createdAt < '${end}';`;
+    const query = `SELECT AVG(sentiment) as avg, COUNT(*), userId FROM sentiment WHERE userId='${userId}' AND teamId='${teamId}' AND createdAt >= '${start}' AND createdAt < '${end}' GROUP BY userId;`;
     return getRepository(SentimentDB)
       .query(query)
       .then(result => {
@@ -40,14 +39,10 @@ export class SentimentService extends SuppressorService {
       .subtract(3, 'minutes')
       .format('YYYY-MM-DD HH:mm:ss');
     const end = moment().format('YYYY-MM-DD HH:mm:ss');
-    const isSuppressed = await this.isSuppressed(userId, teamId);
-    if (!isSuppressed) {
-      const averageSentiment = await this.getAvgSentimentForTimePeriod(userId, teamId, start, end);
-      if (averageSentiment < 0) {
-        console.log(`${userId} should be muzzled because his sentiment analysis score was: ${averageSentiment}`);
-      } else {
-        this.analyzeSentimentAndStore(userId, teamId, text);
-      }
-    }
+    const averageSentiment = await this.getAvgSentimentForTimePeriod(userId, teamId, start, end);
+    console.log(averageSentiment);
+    // if (averageSentiment < 0) {
+    //   console.log(`${userId} should be muzzled because his sentiment analysis score was: ${averageSentiment}`);
+    // }
   }
 }
