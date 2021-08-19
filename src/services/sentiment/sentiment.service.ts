@@ -17,6 +17,7 @@ export class SentimentService {
     console.log('user', userId);
     console.log('team', teamId);
     console.log('text', text);
+    console.log(emotionalScore);
     const sentimentModel = new SentimentDB();
     sentimentModel.sentiment = emotionalScore.comparative;
     sentimentModel.teamId = teamId;
@@ -25,25 +26,24 @@ export class SentimentService {
   }
 
   getAvgSentimentForTimePeriod(userId: string, teamId: string, start: string, end: string): Promise<any> {
-    const query = `select AVG(sentiment.sentiment), COUNT(sentiment.userId), sentiment.userId, slack_user.isBot FROM sentiment INNER JOIN slack_user ON slack_user.slackId = sentiment.userId WHERE slack_user.isBot != 1 AND sentiment.userId = '${userId}' AND sentiment.teamId = '${teamId}' AND sentiment.createdAt >= '${start}' AND sentiment.createdAt < '${end}' GROUP BY sentiment.userId, slack_user.isBot;`;
+    const query = `select AVG(sentiment.sentiment) as avg, COUNT(sentiment.userId) as count, sentiment.userId, slack_user.isBot FROM sentiment INNER JOIN slack_user ON slack_user.slackId = sentiment.userId WHERE slack_user.isBot != 1 AND sentiment.userId = '${userId}' AND sentiment.teamId = '${teamId}' AND sentiment.createdAt >= '${start}' AND sentiment.createdAt < '${end}' GROUP BY sentiment.userId, slack_user.isBot;`;
     return getRepository(SentimentDB)
       .query(query)
       .then(result => {
+        console.log('avg result');
         console.log(result);
         return result;
       });
   }
 
-  public async autoMuzzleIfNecessary(userId: string, teamId: string, text: string) {
+  public async autoMuzzleIfNecessary(userId: string, teamId: string, text: string): Promise<void> {
     const start = moment()
       .subtract(3, 'minutes')
       .format('YYYY-MM-DD HH:mm:ss');
     const end = moment().format('YYYY-MM-DD HH:mm:ss');
     const averageSentiment = await this.getAvgSentimentForTimePeriod(userId, teamId, start, end);
-    console.log(averageSentiment);
-    console.log(text);
-    // if (averageSentiment < 0) {
-    //   console.log(`${userId} should be muzzled because his sentiment analysis score was: ${averageSentiment}`);
-    // }
+    if (averageSentiment?.[0]?.avg < 0 && averageSentiment?.[0]?.count >= 10) {
+      console.log(`${userId} should be muzzled because his sentiment analysis score was: ${averageSentiment}`);
+    }
   }
 }
