@@ -39,7 +39,7 @@ export class SentimentService {
 
   public async autoMuzzleIfNecessary(userId: string, teamId: string): Promise<void> {
     const start = moment()
-      .subtract(3, 'minutes')
+      .subtract(5, 'minutes')
       .format('YYYY-MM-DD HH:mm:ss');
     const end = moment().format('YYYY-MM-DD HH:mm:ss');
     const averageSentiment = await this.getAvgSentimentForTimePeriod(userId, teamId, start, end);
