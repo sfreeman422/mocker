@@ -2,9 +2,11 @@ import moment from 'moment';
 import Sentiment, { AnalysisResult } from 'sentiment';
 import { getRepository, InsertResult } from 'typeorm';
 import { Sentiment as SentimentDB } from '../../shared/db/models/Sentiment';
+import { WebService } from '../web/web.service';
 
 export class SentimentService {
   sentiment = new Sentiment();
+  private webService = WebService.getInstance();
 
   public performSentimentAnalysis(userId: string, teamId: string, text: string): void {
     this.analyzeSentimentAndStore(userId, teamId, text).then(() => {
@@ -50,6 +52,15 @@ export class SentimentService {
     console.log('team avg minus std', avgMinusOneStd);
     if (averageSentiment?.[0]?.avg <= avgMinusOneStd && averageSentiment?.[0]?.count >= 5) {
       console.log(`${userId} should be muzzled.`);
+      this.webService.sendDebugMessage(
+        'U2YJQN2KB',
+        `${userId} should be muzzled. 
+        User Average was ${averageSentiment?.[0]?.avg}.
+        Team Average was ${avgAndStd?.[0]?.avg}.
+        Team STD was ${avgAndStd?.[0]?.std}.
+        Team Average Minus STD was ${avgMinusOneStd}.
+        `,
+      );
     }
   }
 }
