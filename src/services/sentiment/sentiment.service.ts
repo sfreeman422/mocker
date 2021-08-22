@@ -14,7 +14,6 @@ export class SentimentService {
 
   public async analyzeSentimentAndStore(userId: string, teamId: string, text: string): Promise<InsertResult> {
     const emotionalScore: AnalysisResult = this.sentiment.analyze(text);
-    console.log(emotionalScore);
     const sentimentModel = new SentimentDB();
     sentimentModel.sentiment = emotionalScore.comparative;
     sentimentModel.teamId = teamId;
@@ -26,10 +25,15 @@ export class SentimentService {
     const query = `select AVG(sentiment.sentiment) as avg, COUNT(sentiment.userId) as count, sentiment.userId, slack_user.isBot FROM sentiment INNER JOIN slack_user ON slack_user.slackId = sentiment.userId WHERE slack_user.isBot != 1 AND sentiment.userId = '${userId}' AND sentiment.teamId = '${teamId}' AND sentiment.createdAt >= '${start}' AND sentiment.createdAt < '${end}' GROUP BY sentiment.userId, slack_user.isBot;`;
     return getRepository(SentimentDB)
       .query(query)
+      .then(result => result);
+  }
+
+  getAvgAndSTD(teamId: string): Promise<any> {
+    const query = `SELECT AVG(sentiment) as avg, STD(sentiment) as std from sentimentWHERE teamId=${teamId};`;
+    return getRepository(SentimentDB)
+      .query(query)
       .then(result => {
-        console.log('avg result');
         console.log(result);
-        return result;
       });
   }
 
@@ -39,8 +43,14 @@ export class SentimentService {
       .format('YYYY-MM-DD HH:mm:ss');
     const end = moment().format('YYYY-MM-DD HH:mm:ss');
     const averageSentiment = await this.getAvgSentimentForTimePeriod(userId, teamId, start, end);
-    if (averageSentiment?.[0]?.avg < 0 && averageSentiment?.[0]?.count >= 10) {
-      console.log(`${userId} should be muzzled because his sentiment analysis score was: ${averageSentiment}`);
+    const avgAndStd = await this.getAvgAndSTD(teamId);
+    const avgMinusOneStd = avgAndStd?.[0]?.avg - avgAndStd?.[0]?.std;
+    console.log('user avg', averageSentiment?.[0]?.avg);
+    console.log('team std', avgAndStd?.[0]?.std);
+    console.log('team avg', avgAndStd?.[0]?.avg);
+    console.log('team avg minus std', avgMinusOneStd);
+    if (averageSentiment?.[0]?.avg <= avgMinusOneStd && averageSentiment?.[0]?.count >= 5) {
+      console.log(`${userId} should be muzzled.`);
     }
   }
 }
