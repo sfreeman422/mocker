@@ -29,7 +29,7 @@ export class SentimentService {
   }
 
   getAvgAndSTD(teamId: string): Promise<any> {
-    const query = `SELECT AVG(sentiment) as avg, STD(sentiment) as std from sentimentWHERE teamId=${teamId};`;
+    const query = `SELECT AVG(sentiment) as avg, STD(sentiment) as std from sentiment WHERE teamId='${teamId}';`;
     return getRepository(SentimentDB)
       .query(query)
       .then(result => {
