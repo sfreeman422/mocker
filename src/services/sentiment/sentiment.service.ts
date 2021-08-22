@@ -34,6 +34,7 @@ export class SentimentService {
       .query(query)
       .then(result => {
         console.log(result);
+        return result;
       });
   }
 
