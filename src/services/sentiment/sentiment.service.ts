@@ -32,10 +32,7 @@ export class SentimentService {
     const query = `SELECT AVG(sentiment) as avg, STD(sentiment) as std from sentiment WHERE teamId='${teamId}';`;
     return getRepository(SentimentDB)
       .query(query)
-      .then(result => {
-        console.log(result);
-        return result;
-      });
+      .then(result => result);
   }
 
   public async autoMuzzleIfNecessary(userId: string, teamId: string): Promise<void> {
@@ -46,6 +43,7 @@ export class SentimentService {
     const averageSentiment = await this.getAvgSentimentForTimePeriod(userId, teamId, start, end);
     const avgAndStd = await this.getAvgAndSTD(teamId);
     const avgMinusOneStd = avgAndStd?.[0]?.avg - avgAndStd?.[0]?.std;
+    console.log(averageSentiment);
     console.log('user avg', averageSentiment?.[0]?.avg);
     console.log('team std', avgAndStd?.[0]?.std);
     console.log('team avg', avgAndStd?.[0]?.avg);
