@@ -49,7 +49,7 @@ export class WebService {
 
   public sendDebugMessage(userId: string, text: string) {
     const options: ChatPostEphemeralArguments = {
-      channel: '#testbotz',
+      channel: userId,
       text,
       user: userId,
     };
