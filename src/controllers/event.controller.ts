@@ -202,7 +202,7 @@ eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
       handleReaction(request);
     } else if (isInHotAndNotBot) {
       deleteMessage(request);
-    } else {
+    } else if (!isReaction && !isNewChannelCreated && !isNewUserAdded) {
       handleAutoMuzzle(request);
     }
     handleActivity(request);

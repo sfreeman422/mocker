@@ -5,7 +5,7 @@ export class Sentiment {
   @PrimaryGeneratedColumn()
   public id!: number;
 
-  @Column({ default: null })
+  @Column()
   public userId!: string;
 
   @Column()
