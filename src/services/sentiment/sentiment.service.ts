@@ -1,5 +1,5 @@
 import moment from 'moment';
-import Sentiment, { AnalysisOptions, AnalysisResult } from 'sentiment';
+import Sentiment, { AnalysisResult } from 'sentiment';
 import { getRepository, InsertResult } from 'typeorm';
 import { Sentiment as SentimentDB } from '../../shared/db/models/Sentiment';
 import { SlackService } from '../slack/slack.service';
@@ -17,14 +17,7 @@ export class SentimentService {
   }
 
   public async analyzeSentimentAndStore(userId: string, teamId: string, text: string): Promise<InsertResult> {
-    const options: AnalysisOptions = {
-      extras: {
-        fuck: 0,
-        dammit: 0,
-        damn: 0,
-      },
-    };
-    const emotionalScore: AnalysisResult = this.sentiment.analyze(text, options);
+    const emotionalScore: AnalysisResult = this.sentiment.analyze(text);
     const sentimentModel = new SentimentDB();
     sentimentModel.sentiment = emotionalScore.comparative;
     sentimentModel.teamId = teamId;
