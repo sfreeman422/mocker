@@ -98,7 +98,10 @@ export class MuzzleService extends SuppressorService {
     timestamp: string,
   ): Promise<void> {
     console.time('send-muzzled-message');
-    const muzzle: string | null = await this.muzzlePersistenceService.getMuzzle(userId, teamId);
+    const muzzle: string | null = await this.muzzlePersistenceService.getMuzzle(userId, teamId).catch(e => {
+      console.error('error retrieving muzzle', e);
+      return null;
+    });
     if (muzzle) {
       const suppressions = await this.muzzlePersistenceService.getSuppressions(userId, teamId);
       if (!suppressions || (suppressions && +suppressions < MAX_SUPPRESSIONS)) {
