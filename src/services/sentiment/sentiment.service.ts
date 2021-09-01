@@ -1,5 +1,5 @@
 import moment from 'moment';
-import Sentiment, { AnalysisOptions, AnalysisResult, SentimentOptions } from 'sentiment';
+import Sentiment, { AnalysisOptions, AnalysisResult } from 'sentiment';
 import { getRepository, InsertResult } from 'typeorm';
 import { Sentiment as SentimentDB } from '../../shared/db/models/Sentiment';
 import { SlackService } from '../slack/slack.service';
