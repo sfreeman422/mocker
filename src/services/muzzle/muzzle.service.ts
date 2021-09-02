@@ -8,6 +8,31 @@ export class MuzzleService extends SuppressorService {
   private counterService = new CounterService();
   private storePersistenceService = StorePersistenceService.getInstance();
 
+  public async autoMuzzle(userId: string, teamId: string): Promise<string> {
+    if (!userId) {
+      throw new Error(`Invalid username passed in. You can only muzzle existing slack users.`);
+    }
+    const userName = await this.slackService.getUserNameById(userId, teamId);
+    const requestorId = (await this.slackService.getUserIdByName('muzzle', teamId)) as string;
+    if (await this.isSuppressed(userId, teamId)) {
+      console.error(
+        `Automuzzle attempted to muzzle ${userName} | ${userId} but ${userName} | ${userId} is already muzzled.`,
+      );
+      throw new Error(`${userName} is already muzzled!`);
+    } else {
+      const timeToMuzzle = getTimeToMuzzle();
+      return await this.muzzlePersistenceService
+        .addMuzzle(requestorId, userId, teamId, timeToMuzzle)
+        .then(() => {
+          return `Successfully auto-muzzled ${userName} for ${getTimeString(timeToMuzzle)}`;
+        })
+        .catch((e: any) => {
+          console.error(e);
+          throw new Error(`Muzzle failed!`);
+        });
+    }
+  }
+
   public async addUserToMuzzled(userId: string, requestorId: string, teamId: string, channel: string): Promise<string> {
     const shouldBackFire = await this.shouldBackfire(requestorId, teamId);
     const userName = await this.slackService.getUserNameById(userId, teamId);

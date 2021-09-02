@@ -71,6 +71,10 @@ export class SlackPersistenceService {
     return getRepository(SlackUser).findOne({ slackId: userId, teamId });
   }
 
+  async getUserByUserName(username: string, teamId: string): Promise<SlackUser | undefined> {
+    return getRepository(SlackUser).findOne({ name: username, teamId });
+  }
+
   async getBotByBotId(botId: string, teamId: string): Promise<SlackUser | undefined> {
     return getRepository(SlackUser).findOne({ botId, teamId });
   }

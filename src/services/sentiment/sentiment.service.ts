@@ -2,6 +2,7 @@ import moment from 'moment';
 import Sentiment, { AnalysisOptions, AnalysisResult } from 'sentiment';
 import { getRepository, InsertResult } from 'typeorm';
 import { Sentiment as SentimentDB } from '../../shared/db/models/Sentiment';
+import { MuzzleService } from '../muzzle/muzzle.service';
 import { SlackService } from '../slack/slack.service';
 import { WebService } from '../web/web.service';
 
@@ -9,6 +10,7 @@ export class SentimentService {
   sentiment = new Sentiment();
   private webService = WebService.getInstance();
   private slackService = SlackService.getInstance();
+  private muzzleService = new MuzzleService();
 
   public performSentimentAnalysis(userId: string, teamId: string, text: string): void {
     this.analyzeSentimentAndStore(userId, teamId, text).then(() => {
@@ -70,6 +72,7 @@ export class SentimentService {
           Team Average Minus STD was ${avgMinusOneStd}.
           `,
         );
+        this.muzzleService.autoMuzzle(userId, teamId);
       });
     }
   }
