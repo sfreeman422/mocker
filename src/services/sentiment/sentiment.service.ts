@@ -12,13 +12,18 @@ export class SentimentService {
   private slackService = SlackService.getInstance();
   private muzzleService = new MuzzleService();
 
-  public performSentimentAnalysis(userId: string, teamId: string, text: string): void {
-    this.analyzeSentimentAndStore(userId, teamId, text).then(() => {
+  public performSentimentAnalysis(userId: string, teamId: string, channelId: string, text: string): void {
+    this.analyzeSentimentAndStore(userId, teamId, channelId, text).then(() => {
       this.autoMuzzleIfNecessary(userId, teamId);
     });
   }
 
-  public async analyzeSentimentAndStore(userId: string, teamId: string, text: string): Promise<InsertResult> {
+  public async analyzeSentimentAndStore(
+    userId: string,
+    teamId: string,
+    channelId: string,
+    text: string,
+  ): Promise<InsertResult> {
     const options: AnalysisOptions = {
       extras: {
         wtf: 0,
@@ -30,6 +35,7 @@ export class SentimentService {
     sentimentModel.sentiment = emotionalScore.comparative;
     sentimentModel.teamId = teamId;
     sentimentModel.userId = userId;
+    sentimentModel.channelId = channelId;
     return getRepository(SentimentDB).insert(sentimentModel);
   }
 

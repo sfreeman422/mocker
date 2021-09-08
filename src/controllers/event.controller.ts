@@ -165,7 +165,12 @@ function handleActivity(request: EventRequest): void {
 }
 
 function handleAutoMuzzle(request: EventRequest): void {
-  sentimentService.performSentimentAnalysis(request.event.user, request.team_id, request.event.text);
+  sentimentService.performSentimentAnalysis(
+    request.event.user,
+    request.team_id,
+    request.event.channel,
+    request.event.text,
+  );
 }
 
 // Change route to /event/handle instead.

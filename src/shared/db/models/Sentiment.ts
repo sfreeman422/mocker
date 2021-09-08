@@ -11,6 +11,9 @@ export class Sentiment {
   @Column()
   public teamId!: string;
 
+  @Column({ default: null })
+  public channelId!: string;
+
   @Column({ type: 'decimal', precision: 5, scale: 2 })
   public sentiment!: number;
 
