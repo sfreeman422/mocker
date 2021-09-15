@@ -13,9 +13,7 @@ export class SentimentService {
   private muzzleService = new MuzzleService();
 
   public performSentimentAnalysis(userId: string, teamId: string, channelId: string, text: string): void {
-    this.analyzeSentimentAndStore(userId, teamId, channelId, text).then(() => {
-      this.autoMuzzleIfNecessary(userId, teamId);
-    });
+    this.analyzeSentimentAndStore(userId, teamId, channelId, text);
   }
 
   public async analyzeSentimentAndStore(
@@ -53,6 +51,7 @@ export class SentimentService {
       .then(result => result);
   }
 
+  // Unused - keeping in case we want to bring this back.
   public async autoMuzzleIfNecessary(userId: string, teamId: string): Promise<void> {
     const start = moment()
       .subtract(5, 'minutes')
