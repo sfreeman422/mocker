@@ -19,15 +19,19 @@ const reportService = new MuzzleReportService();
 muzzleController.post('/muzzle', async (req: Request, res: Response) => {
   const request: SlashCommandRequest = req.body;
   const userId: string = slackService.getUserId(request.text);
-  const results = await muzzleService
-    .addUserToMuzzled(userId, request.user_id, request.team_id, request.channel_name)
-    .catch(e => {
-      console.error(e);
-      res.send(e);
-    });
-  if (results) {
-    console.log(results);
-    res.send(results);
+  if (request.user_id === userId) {
+    res.send('Sorry, you cannot muzzle yourself anymore. JP ruined it.');
+  } else {
+    const results = await muzzleService
+      .addUserToMuzzled(userId, request.user_id, request.team_id, request.channel_name)
+      .catch(e => {
+        console.error(e);
+        res.send(e);
+      });
+    if (results) {
+      console.log(results);
+      res.send(results);
+    }
   }
 });
 
