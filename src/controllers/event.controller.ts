@@ -164,7 +164,7 @@ function handleActivity(request: EventRequest): void {
   activityPersistenceService.updateLatestHotness();
 }
 
-function handleAutoMuzzle(request: EventRequest): void {
+function logSentiment(request: EventRequest): void {
   sentimentService.performSentimentAnalysis(
     request.event.user,
     request.team_id,
@@ -208,7 +208,7 @@ eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
     } else if (isInHotAndNotBot) {
       deleteMessage(request);
     } else if (!isReaction && !isNewChannelCreated && !isNewUserAdded) {
-      handleAutoMuzzle(request);
+      logSentiment(request);
     }
     handleActivity(request);
     console.timeEnd('respond-to-event');
