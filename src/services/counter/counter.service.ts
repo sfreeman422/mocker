@@ -37,16 +37,20 @@ export class CounterService extends SuppressorService {
   ): Promise<void> {
     const counterMuzzle: CounterMuzzle | undefined = this.counterPersistenceService.getCounterMuzzle(userId);
     if (counterMuzzle) {
-      this.webService.deleteMessage(channel, timestamp);
-      if (counterMuzzle!.suppressionCount < MAX_SUPPRESSIONS) {
+      if (counterMuzzle.suppressionCount < MAX_SUPPRESSIONS) {
         this.counterPersistenceService.setCounterMuzzle(userId, {
-          suppressionCount: ++counterMuzzle!.suppressionCount,
-          counterId: counterMuzzle!.counterId,
-          removalFn: counterMuzzle!.removalFn,
+          suppressionCount: ++counterMuzzle.suppressionCount,
+          counterId: counterMuzzle.counterId,
+          removalFn: counterMuzzle.removalFn,
         });
-        const lang = this.translationService.getRandomLanguage();
-        const translated = await this.translationService.translate(text, lang);
-        this.webService.sendMessage(channel, `<@${userId}> says "${translated}"`);
+        this.sendSuppressedMessage(
+          channel,
+          userId,
+          text,
+          timestamp,
+          +counterMuzzle.counterId,
+          this.counterPersistenceService,
+        );
       }
     }
   }

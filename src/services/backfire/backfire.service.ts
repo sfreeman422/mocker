@@ -15,24 +15,10 @@ export class BackfireService extends SuppressorService {
   ): Promise<void> {
     const backfireId: string | null = await this.backfirePersistenceService.getBackfireByUserId(userId, teamId);
     if (backfireId) {
-      this.webService.deleteMessage(channel, timestamp);
       const suppressions = await this.backfirePersistenceService.getSuppressions(userId, teamId);
       if (suppressions && +suppressions < MAX_SUPPRESSIONS) {
-        this.backfirePersistenceService.incrementMessageSuppressions(+backfireId);
         this.backfirePersistenceService.addSuppression(userId, teamId);
-        const language = this.translationService.getRandomLanguage();
-        const suppressedMessage = await this.translationService.translate(text, language).catch(e => {
-          console.error('error on translation');
-          console.error(e);
-          return null;
-        });
-        if (suppressedMessage === null) {
-          this.sendSuppressedMessage(text, +backfireId, this.backfirePersistenceService);
-        } else {
-          await this.logTranslateSuppression(text, +backfireId, this.backfirePersistenceService);
-        }
-
-        this.webService.sendMessage(channel, `<@${userId}> says "${suppressedMessage}"`);
+        this.sendSuppressedMessage(channel, userId, text, timestamp, +backfireId, this.backfirePersistenceService);
       } else {
         this.backfirePersistenceService.trackDeletedMessage(+backfireId, text);
       }

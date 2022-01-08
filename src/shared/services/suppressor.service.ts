@@ -13,10 +13,10 @@ import moment from 'moment';
 export class SuppressorService {
   public webService = WebService.getInstance();
   public slackService = SlackService.getInstance();
+  public translationService = new TranslationService();
   public backfirePersistenceService = BackFirePersistenceService.getInstance();
   public muzzlePersistenceService = MuzzlePersistenceService.getInstance();
   public counterPersistenceService = CounterPersistenceService.getInstance();
-  public translationService = new TranslationService();
 
   public isBot(userId: string, teamId: string): Promise<boolean | undefined> {
     return this.slackService.getUserById(userId, teamId).then(user => !!user?.isBot);
@@ -41,14 +41,12 @@ export class SuppressorService {
   // Built for spoiler only. This will not work on other block apps. Should improve this to be universal.
   public async findUserInBlocks(blocks: any, users?: SlackUser[]): Promise<string | undefined> {
     const allUsers: SlackUser[] = users ? users : await this.slackService.getAllUsers();
-    console.log(blocks);
     let id;
     const firstBlock = blocks[0]?.elements?.[0];
     if (firstBlock) {
       Object.keys(firstBlock).forEach(key => {
         if (typeof firstBlock[key] === 'string') {
           allUsers.forEach(user => {
-            console.log(user);
             if (firstBlock[key].includes(user.name)) {
               id = user.id;
             }
@@ -94,7 +92,7 @@ export class SuppressorService {
   /**
    * Determines whether or not a bot message should be removed.
    */
-  public async shouldBotMessageBeMuzzled(request: EventRequest): Promise<boolean> {
+  public async shouldBotMessageBeMuzzled(request: EventRequest): Promise<string | false> {
     const isBot = request.event.bot_id
       ? await this.slackService
           .getBotByBotId(request.event.bot_id, request.team_id)
@@ -108,11 +106,7 @@ export class SuppressorService {
       let userIdByCallbackId;
       let userIdByBlocks;
 
-      console.log('Bot message found');
-
       if (request.event.blocks) {
-        console.log('Has blocks');
-        console.log(request.event.blocks);
         const userId = this.findUserIdInBlocks(request.event.blocks, USER_ID_REGEX);
         const userName = await this.findUserInBlocks(request.event.blocks);
         console.log('ID found for spoiler muzzle:' + userName);
@@ -145,17 +139,26 @@ export class SuppressorService {
         userIdByCallbackId,
         userIdByBlocks,
       );
-      return !!(
-        finalUserId &&
-        ((await this.muzzlePersistenceService.isUserMuzzled(finalUserId, request.team_id)) ||
-          (await this.backfirePersistenceService.isBackfire(finalUserId, request.team_id)) ||
-          (await this.counterPersistenceService.isCounterMuzzled(finalUserId)))
-      );
+      if (
+        !!(
+          finalUserId &&
+          ((await this.muzzlePersistenceService.isUserMuzzled(finalUserId, request.team_id)) ||
+            (await this.backfirePersistenceService.isBackfire(finalUserId, request.team_id)) ||
+            (await this.counterPersistenceService.isCounterMuzzled(finalUserId)))
+        )
+      ) {
+        return finalUserId;
+      }
     }
     return false;
   }
 
-  public getReplacementWord(word: string, isFirstWord: boolean, isLastWord: boolean, replacementText: string): string {
+  public getFallbackReplacementWord(
+    word: string,
+    isFirstWord: boolean,
+    isLastWord: boolean,
+    replacementText: string,
+  ): string {
     const text =
       isRandomEven() && word.length < MAX_WORD_LENGTH && word !== ' ' && !this.slackService.containsTag(word)
         ? `*${word}*`
@@ -170,7 +173,7 @@ export class SuppressorService {
   public logTranslateSuppression(
     text: string,
     id: number,
-    persistenceService?: BackFirePersistenceService | MuzzlePersistenceService,
+    persistenceService?: BackFirePersistenceService | MuzzlePersistenceService | CounterPersistenceService,
   ): void {
     const sentence = text.trim();
     const words = sentence.split(' ');
@@ -189,13 +192,43 @@ export class SuppressorService {
     }
   }
 
+  public async sendSuppressedMessage(
+    channel: string,
+    userId: string,
+    text: string,
+    timestamp: string,
+    dbId: number,
+    persistenceService: MuzzlePersistenceService | BackFirePersistenceService | CounterPersistenceService,
+  ): Promise<void> {
+    const textWithFallbackReplacments = text
+      .split(' ')
+      .map(word =>
+        word.length >= MAX_WORD_LENGTH ? REPLACEMENT_TEXT[Math.floor(Math.random() * REPLACEMENT_TEXT.length)] : word,
+      )
+      .join(' ');
+
+    const suppressedMessage = await this.translationService.translate(textWithFallbackReplacments).catch(e => {
+      console.error('error on translation');
+      console.error(e);
+      return null;
+    });
+
+    if (suppressedMessage === null) {
+      this.sendFallbackSuppressedMessage(text, dbId, persistenceService);
+    } else {
+      await this.logTranslateSuppression(text, dbId, persistenceService);
+      await this.webService.deleteMessage(channel, timestamp);
+      await this.webService.sendMessage(channel, `<@${userId}> says "${suppressedMessage}"`);
+    }
+  }
+
   /**
    * Takes in text and randomly muzzles words.
    */
-  public sendSuppressedMessage(
+  public sendFallbackSuppressedMessage(
     text: string,
     id: number,
-    persistenceService?: BackFirePersistenceService | MuzzlePersistenceService,
+    persistenceService?: BackFirePersistenceService | MuzzlePersistenceService | CounterPersistenceService,
   ): string {
     const sentence = text.trim();
     const words = sentence.split(' ');
@@ -206,7 +239,7 @@ export class SuppressorService {
     let replacementWord;
 
     for (let i = 0; i < words.length; i++) {
-      replacementWord = this.getReplacementWord(
+      replacementWord = this.getFallbackReplacementWord(
         words[i],
         i === 0,
         i === words.length - 1,
@@ -235,7 +268,6 @@ export class SuppressorService {
       .format('YYYY-MM-DD HH:mm:ss');
     const end = moment().format('YYYY-MM-DD HH:mm:ss');
     const muzzles = await this.muzzlePersistenceService.getMuzzlesByTimePeriod(requestorId, teamId, start, end);
-    console.log(`Number of muzzles for ${requestorId}: ${muzzles}`);
     const chanceOfBackfire = 0.05 + muzzles * 0.025;
     console.log(`Chance of Backfire for ${requestorId}: ${chanceOfBackfire}`);
     return Math.random() <= chanceOfBackfire;
