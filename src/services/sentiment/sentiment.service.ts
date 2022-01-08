@@ -9,7 +9,7 @@ export class SentimentService {
     this.analyzeSentimentAndStore(userId, teamId, channelId, text);
   }
 
-  public async analyzeSentimentAndStore(
+  private async analyzeSentimentAndStore(
     userId: string,
     teamId: string,
     channelId: string,
@@ -28,19 +28,5 @@ export class SentimentService {
     sentimentModel.userId = userId;
     sentimentModel.channelId = channelId;
     return getRepository(SentimentDB).insert(sentimentModel);
-  }
-
-  getAvgSentimentForTimePeriod(userId: string, teamId: string, start: string, end: string): Promise<any> {
-    const query = `select AVG(sentiment.sentiment) as avg, COUNT(sentiment.userId) as count, sentiment.userId, slack_user.isBot FROM sentiment INNER JOIN slack_user ON slack_user.slackId = sentiment.userId WHERE slack_user.isBot != 1 AND sentiment.userId = '${userId}' AND sentiment.teamId = '${teamId}' AND sentiment.createdAt >= '${start}' AND sentiment.createdAt < '${end}' GROUP BY sentiment.userId, slack_user.isBot;`;
-    return getRepository(SentimentDB)
-      .query(query)
-      .then(result => result);
-  }
-
-  getAvgAndSTD(teamId: string): Promise<any> {
-    const query = `SELECT AVG(sentiment) as avg, STD(sentiment) as std from sentiment WHERE teamId='${teamId}';`;
-    return getRepository(SentimentDB)
-      .query(query)
-      .then(result => result);
   }
 }
