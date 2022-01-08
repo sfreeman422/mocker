@@ -47,6 +47,15 @@ export class WebService {
     });
   }
 
+  public sendDebugMessage(userId: string, text: string) {
+    const options: ChatPostEphemeralArguments = {
+      channel: userId,
+      text,
+      user: userId,
+    };
+    return this.web.chat.postEphemeral(options);
+  }
+
   /**
    * Handles sending messages to the chat.
    */

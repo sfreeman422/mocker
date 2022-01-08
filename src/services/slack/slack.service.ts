@@ -34,6 +34,10 @@ export class SlackService {
     return regArray ? regArray[0].slice(2) : '';
   }
 
+  public getUserIdByName(userName: string, teamId: string): Promise<string | undefined> {
+    return this.persistenceService.getUserByUserName(userName, teamId).then(user => user?.slackId);
+  }
+
   /**
    * Returns the user name by id
    */

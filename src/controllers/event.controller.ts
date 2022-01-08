@@ -9,6 +9,7 @@ import { getTimeString } from '../services/muzzle/muzzle-utilities';
 import { MuzzlePersistenceService } from '../services/muzzle/muzzle.persistence.service';
 import { MuzzleService } from '../services/muzzle/muzzle.service';
 import { ReactionService } from '../services/reaction/reaction.service';
+import { SentimentService } from '../services/sentiment/sentiment.service';
 import { SlackService } from '../services/slack/slack.service';
 import { WebService } from '../services/web/web.service';
 import { CounterMuzzle } from '../shared/models/counter/counter-models';
@@ -24,6 +25,7 @@ const reactionService = new ReactionService();
 const webService = WebService.getInstance();
 const slackService = SlackService.getInstance();
 const suppressorService = new SuppressorService();
+const sentimentService = new SentimentService();
 const muzzlePersistenceService = MuzzlePersistenceService.getInstance();
 const backfirePersistenceService = BackFirePersistenceService.getInstance();
 const counterPersistenceService = CounterPersistenceService.getInstance();
@@ -161,6 +163,16 @@ function handleActivity(request: EventRequest): void {
   activityPersistenceService.logActivity(request);
   activityPersistenceService.updateLatestHotness();
 }
+
+function logSentiment(request: EventRequest): void {
+  sentimentService.performSentimentAnalysis(
+    request.event.user,
+    request.team_id,
+    request.event.channel,
+    request.event.text,
+  );
+}
+
 // Change route to /event/handle instead.
 eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
   if (req.body.challenge) {
@@ -175,7 +187,6 @@ eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
     const isReaction = request.event.type === 'reaction_added' || request.event.type === 'reaction_removed';
     const isMuzzled = await muzzlePersistenceService.isUserMuzzled(request.event.user, request.team_id);
     const isUserBackfired = await backfirePersistenceService.isBackfire(request.event.user, request.team_id);
-    // TO DO: Add teamId to this call once counterPersistenceService uses redis.
     const isUserCounterMuzzled = await counterPersistenceService.isCounterMuzzled(request.event.user);
     const isMuzzleBot = request.event.user === 'ULG8SJRFF';
     const isInHotAndNotBot = !isMuzzleBot && request.event.channel === 'C027YMYC5CJ';
@@ -196,6 +207,8 @@ eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
       handleReaction(request);
     } else if (isInHotAndNotBot) {
       deleteMessage(request);
+    } else if (!isReaction && !isNewChannelCreated && !isNewUserAdded) {
+      logSentiment(request);
     }
     handleActivity(request);
     console.timeEnd('respond-to-event');
