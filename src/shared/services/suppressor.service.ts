@@ -185,10 +185,14 @@ export class SuppressorService {
       charactersSuppressed += words[i].length;
     }
 
-    if (persistenceService) {
-      persistenceService.incrementMessageSuppressions(id);
-      persistenceService.incrementCharacterSuppressions(id, charactersSuppressed);
-      persistenceService.incrementWordSuppressions(id, wordsSuppressed);
+    try {
+      if (persistenceService) {
+        persistenceService.incrementMessageSuppressions(id);
+        persistenceService.incrementCharacterSuppressions(id, charactersSuppressed);
+        persistenceService.incrementWordSuppressions(id, wordsSuppressed);
+      }
+    } catch (e) {
+      console.error(e);
     }
   }
 
@@ -200,24 +204,33 @@ export class SuppressorService {
     dbId: number,
     persistenceService: MuzzlePersistenceService | BackFirePersistenceService | CounterPersistenceService,
   ): Promise<void> {
-    const textWithFallbackReplacments = text
-      .split(' ')
+    await this.webService.deleteMessage(channel, timestamp, userId);
+
+    const words = text.split(' ');
+
+    const textWithFallbackReplacments = words
       .map(word =>
         word.length >= MAX_WORD_LENGTH ? REPLACEMENT_TEXT[Math.floor(Math.random() * REPLACEMENT_TEXT.length)] : word,
       )
       .join(' ');
 
-    const suppressedMessage = await this.translationService.translate(textWithFallbackReplacments).catch(e => {
-      console.error('error on translation');
-      console.error(e);
-      return null;
-    });
+    let suppressedMessage;
+    const shouldFallBack =
+      words.length >= 500 ||
+      (await this.translationService
+        .translate(textWithFallbackReplacments)
+        .then(message => (suppressedMessage = message))
+        .catch(e => {
+          console.error('error on translation');
+          console.error(e);
+          return null;
+        })) == null;
 
-    if (suppressedMessage === null) {
-      this.sendFallbackSuppressedMessage(text, dbId, persistenceService);
+    if (shouldFallBack) {
+      const message = this.sendFallbackSuppressedMessage(text, dbId, persistenceService);
+      await this.webService.sendMessage(channel, `<@${userId}> says "${message}"`);
     } else {
       await this.logTranslateSuppression(text, dbId, persistenceService);
-      await this.webService.deleteMessage(channel, timestamp);
       await this.webService.sendMessage(channel, `<@${userId}> says "${suppressedMessage}"`);
     }
   }

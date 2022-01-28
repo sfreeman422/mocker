@@ -1,6 +1,6 @@
+import { KnownBlock } from '@slack/web-api';
 import Axios, { AxiosResponse } from 'axios';
 import { Definition, UrbanDictionaryResponse } from '../../shared/models/define/define-models';
-import { Attachment } from '../../shared/models/slack/slack-models';
 
 export class DefineService {
   public static getInstance(): DefineService {
@@ -45,40 +45,47 @@ export class DefineService {
   /**
    * Takes in an array of definitions and breaks them down into a shortened list depending on maxDefs
    */
-  public formatDefs(defArr: Definition[], definedWord: string, maxDefs = 3): { text: string }[] {
+  public formatDefs(defArr: Definition[], definedWord: string, maxDefs = 3): KnownBlock[] {
+    const noDefFound: KnownBlock[] = [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '> Sorry, no definitions found.',
+        },
+      },
+    ];
+
     if (!defArr || defArr.length === 0) {
-      return [{ text: 'Sorry, no definitions found.' }];
+      return noDefFound;
     }
 
-    const formattedArr: Attachment[] = [];
+    const blocks: KnownBlock[] = [];
 
     for (let i = 0; i < defArr.length; i++) {
       if (defArr[i].word.toLowerCase() === definedWord.toLowerCase()) {
-        formattedArr.push({
-          text: this.formatUrbanD(
-            `${formattedArr.length + 1}. ${this.capitalizeFirstLetter(defArr[i].definition, false)}`,
-          ),
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          mrkdown_in: ['text'],
+        const carriageAndNewLine = /(\r\n)/g;
+        const replaceBracket = /[\[\]]/g;
+        const newLineNewLine = /(\n\n)/g;
+        const definition = defArr[i].definition
+          .replace(newLineNewLine, '')
+          .replace(carriageAndNewLine, '\n> ')
+          .replace(replaceBracket, '');
+
+        blocks.push({
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `> ${`${blocks.length + 1}. ${this.capitalizeFirstLetter(definition, false)}`}`,
+          },
         });
       }
 
-      if (formattedArr.length === maxDefs) {
-        return formattedArr;
+      if (blocks.length === maxDefs) {
+        return blocks;
       }
     }
-    return formattedArr.length ? formattedArr : [{ text: 'Sorry, no definitions found.' }];
-  }
-  /**
-   * Takes in a definition and removes brackets.
-   */
-  private formatUrbanD(definition: string): string {
-    let formattedDefinition = '';
-    for (const letter of definition) {
-      if (letter !== '[' && letter !== ']') {
-        formattedDefinition += letter;
-      }
-    }
-    return formattedDefinition;
+
+    return blocks.length > 0 ? blocks : noDefFound;
   }
 }
