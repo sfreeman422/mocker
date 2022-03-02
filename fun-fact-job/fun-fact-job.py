@@ -1,12 +1,12 @@
 import mysql.connector
 import os
 import requests
+import random
+import ssl
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-import ssl
-import random
+from urllib3 import Retry
 
-ssl._create_default_https_context = ssl._create_unverified_context
 urls = [
   { "url": "https://uselessfacts.jsph.pl/random.json?language=en", "fieldName": "text" },
   { "url": "https://api.api-ninjas.com/v1/facts?limit=1", "fieldName": "fact", "headers": { "X-Api-Key": "{ninjaApiKey}".format(ninjaApiKey=os.environ["API_NINJA_KEY"])}}
@@ -15,6 +15,17 @@ urls = [
 quotes = [
   { "url": "https://quotes.rest/qod.json?category=inspire" }
 ]
+ssl._create_default_https_context = ssl._create_unverified_context
+
+session = requests.session()
+retry = Retry(
+  total=5,
+  backoff_factor=10
+)
+
+adapter = requests.adapters.HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 def getFacts(ctx):
   facts = []
@@ -29,19 +40,23 @@ def getFacts(ctx):
 
 def getQuote():
   url = random.choice(quotes)
-  quote = requests.get(url["url"], verify=False)
-  asJson = quote.json()
-  print(asJson)
-  return { 
-    "text": "{quote} - {author}".format(quote=asJson["contents"]["quotes"][0]["quote"], author=asJson["contents"]["quotes"][0]["author"]),
-    "image_url": "https://theysaidso.com/quote/image/{image_id}".format(image_id=asJson["contents"]["quotes"][0]["id"]) }
+  quote = session.get(url["url"])
+  if (quote.ok):
+    asJson = quote.json()
+    return { 
+      "text": "{quote} - {author}".format(quote=asJson["contents"]["quotes"][0]["quote"], author=asJson["contents"]["quotes"][0]["author"]),
+      "image_url": "https://theysaidso.com/quote/image/{image_id}".format(image_id=asJson["contents"]["quotes"][0]["id"]) }
+  else:
+    return {
+      "error": "Issue with quote API - non 200 status code"
+    }
 
 def getFact():
   url = random.choice(urls)
   if ("headers" in url):
-    fact = requests.get(url["url"], headers=url["headers"], verify=False)
+    fact = session.get(url["url"], headers=url["headers"])
   else:
-    fact = requests.get(url["url"], verify=False)
+    fact = session.get(url["url"])
   
   if (fact):
     asJson = fact.json()
@@ -70,7 +85,7 @@ def sendSlackMessage(facts):
   client = WebClient(token=slack_token)
 
   try:
-      response = client.api_call(
+      client.api_call(
         api_method='chat.postMessage',
         json={'channel': '#general','blocks': blocks}
       )
@@ -82,15 +97,16 @@ def sendSlackMessage(facts):
 
 def createBlocks(quote, facts):
   blocks = [
-      {
-        "type": "header",
-        "text": {
-          "type": "plain_text",
-          "text": "SimpleTech's SimpleFacts :tm:",
-          "emoji": True
-        }
-      },
-      {
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": "SimpleTech's SimpleFacts :tm:",
+        "emoji": True
+      }
+    }]
+  if (quote and 'error' not in quote):
+    blocks.append({
         "type": "section",
         "fields": [
           {
@@ -98,15 +114,17 @@ def createBlocks(quote, facts):
             "text": "*Inspirational Quote of the Day* \n"
           }
         ]
-      },
-      {
+      })
+    blocks.append({
         "type": "image",
         "image_url": "{image_url}".format(image_url=quote["image_url"]),
         "alt_text": "marg"
-      },
-      {
+      })
+    blocks.append({
         "type": "divider"
-      },
+      })
+  
+  blocks.append(
       {
         "type": "section",
         "fields": [
@@ -115,8 +133,7 @@ def createBlocks(quote, facts):
             "text": "*Today's Facts:*"
           }
         ]
-      }
-    ]
+      })
   
   factString = ""
   for fact in facts:
