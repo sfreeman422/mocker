@@ -106,6 +106,7 @@ def createBlocks(quote, facts):
       }
     }]
   if (quote and 'error' not in quote):
+    print(quote)
     blocks.append({
         "type": "section",
         "fields": [
