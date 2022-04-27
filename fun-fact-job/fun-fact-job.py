@@ -120,7 +120,7 @@ def createBlocks(quote, facts):
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "{quote}".format(fact=quote["text"])
+        "text": "{quote}".format(quote=quote["text"])
       }
     })
     blocks.append({
