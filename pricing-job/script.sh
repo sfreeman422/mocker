@@ -1,4 +1,4 @@
-. /home/sfreeman/.bash_profile
+. /home/muzzle.lol/.bash_profile
 PATH=/usr/local/bin:$PATH
-cd /home/sfreeman/devchat/mocker/fun-fact-job
+cd /home/muzzle.lol/mocker/fun-fact-job
 pipenv run python ./pricing-job.py
