@@ -34,6 +34,7 @@ const signatureVerification = (req: any, res: Response, next: NextFunction) => {
     console.error(req.ips);
     console.error(req.headers);
     console.error(req.body);
+    console.error(req);
     res.send('Naughty, naughty...');
     return;
   }
