@@ -11,13 +11,13 @@ export class Counter {
   @Column({ default: () => "' '" })
   public counteredId?: string;
 
-  @Column()
+  @Column({ default: () => 0 })
   public messagesSuppressed!: number;
 
-  @Column()
+  @Column({ default: () => 0 })
   public wordsSuppressed!: number;
 
-  @Column()
+  @Column({ default: () => 0 })
   public charactersSuppressed!: number;
 
   @Column()
