@@ -7,17 +7,19 @@ import { Reaction } from '../../shared/db/models/Reaction';
 
 export class ReactionReportService extends ReportService {
   public async getRep(userId: string, teamId: string): Promise<string> {
-    const totalRep = await this.getTotalRep(userId, teamId).catch(() => {
+    const spendingRep = await this.getTotalRep(userId, teamId).catch(() => {
       throw new Error(`Unable to retrieve your rep due to an error!`);
     });
 
-    const message = totalRep ? `\n*You currently have _${totalRep.rep}_ rep.*` : `You do not currently have any rep.`;
+    const message = spendingRep
+      ? `\n*You currently have _${spendingRep.rep}_ rep.*`
+      : `You do not currently have any rep.`;
 
     const repByUser = await this.getRepByUser(userId, teamId)
-      .then(
-        async (perUserRep: ReactionByUser[] | undefined) =>
-          await this.formatRepByUser(perUserRep, teamId, totalRep!.rep),
-      )
+      .then(async (perUserRep: ReactionByUser[] | undefined) => {
+        const total = perUserRep?.reduce((totalRep, currVal) => totalRep + currVal.rep, 0) || 0;
+        return await this.formatRepByUser(perUserRep, teamId, total);
+      })
       .catch(e => console.error(e));
 
     return `${repByUser}\n\n${message}`;
