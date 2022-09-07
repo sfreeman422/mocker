@@ -1,5 +1,5 @@
 import Table from 'easy-table';
-import { getRepository } from 'typeorm';
+import { getRepository, SimpleConsoleLogger } from 'typeorm';
 import { ReportService } from '../../shared/services/report.service';
 import { Rep } from '../../shared/db/models/Rep';
 import { ReactionByUser } from '../../shared/models/reaction/ReactionByUser.model';
@@ -18,6 +18,7 @@ export class ReactionReportService extends ReportService {
     const repByUser = await this.getRepByUser(userId, teamId)
       .then(async (perUserRep: ReactionByUser[] | undefined) => {
         const total = perUserRep?.reduce((totalRep, currVal) => totalRep + currVal.rep, 0) || 0;
+        console.log(total);
         return await this.formatRepByUser(perUserRep, teamId, total);
       })
       .catch(e => console.error(e));
