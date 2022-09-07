@@ -14,7 +14,7 @@ export class List {
   @Column()
   public channelId!: string;
 
-  @Column()
+  @Column({ charset: 'utf8mb4' })
   public text!: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
