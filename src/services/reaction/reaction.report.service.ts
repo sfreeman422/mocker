@@ -18,7 +18,9 @@ export class ReactionReportService extends ReportService {
       .catch(() => `Unable to retrieve your rep due to an error!`);
 
     const repByUser = await this.getRepByUser(userId, teamId)
-      .then(async (perUserRep: ReactionByUser[] | undefined) => await this.formatRepByUser(perUserRep, teamId))
+      .then(
+        async (perUserRep: ReactionByUser[] | undefined) => await this.formatRepByUser(perUserRep, teamId, value!.rep),
+      )
       .catch(e => console.error(e));
 
     return `${repByUser}\n\n${totalRep}`;
@@ -66,7 +68,11 @@ export class ReactionReportService extends ReportService {
       });
   }
 
-  private async formatRepByUser(perUserRep: ReactionByUser[] | undefined, teamId: string): Promise<string> {
+  private async formatRepByUser(
+    perUserRep: ReactionByUser[] | undefined,
+    teamId: string,
+    totalRep: number,
+  ): Promise<string> {
     if (!perUserRep) {
       return 'You do not have any existing relationships.';
     } else {
@@ -74,7 +80,7 @@ export class ReactionReportService extends ReportService {
         perUserRep.map(async userRep => {
           return {
             user: await this.slackService.getUserNameById(userRep.reactingUser, teamId),
-            rep: `${this.getSentiment(userRep.rep)} (${userRep.rep})`,
+            rep: `${this.getSentiment(userRep.rep, totalRep)} (${userRep.rep})`,
           };
         }),
       );
@@ -82,39 +88,29 @@ export class ReactionReportService extends ReportService {
     }
   }
 
-  private getSentiment(rep: number): string {
-    if (rep >= 1000) {
+  private getSentiment(rep: number, totalRep: number): string {
+    const percent = rep / totalRep;
+    if (percent >= 0.9) {
       return 'Worshipped';
-    } else if (rep >= 900 && rep < 1000) {
+    } else if (percent >= 0.8 && percent < 0.9) {
       return 'Enamored';
-    } else if (rep >= 800 && rep < 900) {
+    } else if (percent >= 0.7 && percent < 0.8) {
       return 'Adored';
-    } else if (rep >= 700 && rep < 800) {
+    } else if (percent >= 0.6 && percent < 0.7) {
       return 'Loved';
-    } else if (rep >= 600 && rep < 700) {
+    } else if (percent >= 0.5 && percent < 0.6) {
       return 'Endeared';
-    } else if (rep >= 500 && rep < 600) {
+    } else if (percent >= 0.4 && percent < 0.5) {
       return 'Admired';
-    } else if (rep >= 400 && rep < 500) {
+    } else if (percent >= 0.3 && percent < 0.4) {
       return 'Esteemed';
-    } else if (rep >= 300 && rep < 400) {
+    } else if (percent >= 0.2 && percent < 0.3) {
       return 'Well Liked';
-    } else if (rep >= 200 && rep < 300) {
+    } else if (percent >= 0.1 && percent < 0.2) {
       return 'Liked';
-    } else if (rep >= 100 && rep < 200) {
+    } else if (percent >= 0.01 && percent < 0.1) {
       return 'Respected';
-    } else if (rep >= -300 && rep < 100) {
-      return 'Neutral';
-    } else if (rep >= -500 && rep < -300) {
-      return 'Unfriendly';
-    } else if (rep >= -700 && rep < -500) {
-      return 'Disliked';
-    } else if (rep >= -1000 && rep < -700) {
-      return 'Scorned';
-    } else if (rep >= -1000) {
-      return 'Hated';
-    } else {
-      return 'Neutral';
     }
+    return 'Neutral';
   }
 }

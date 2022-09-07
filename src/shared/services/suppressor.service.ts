@@ -276,8 +276,7 @@ export class SuppressorService {
 
   public async shouldBackfire(requestorId: string, teamId: string): Promise<boolean> {
     const start = moment()
-      .startOf('day')
-      .subtract(7, 'days')
+      .startOf('week')
       .format('YYYY-MM-DD HH:mm:ss');
     const end = moment().format('YYYY-MM-DD HH:mm:ss');
     const muzzles = await this.muzzlePersistenceService.getMuzzlesByTimePeriod(requestorId, teamId, start, end);
