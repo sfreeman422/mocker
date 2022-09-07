@@ -17,7 +17,7 @@ export class ReactionReportService extends ReportService {
 
     const repByUser = await this.getRepByUser(userId, teamId)
       .then(async (perUserRep: ReactionByUser[] | undefined) => {
-        const total = perUserRep?.reduce((totalRep, currVal) => totalRep + currVal.rep, 0) || 0;
+        const total = perUserRep?.reduce((totalRep, currVal) => Number(totalRep) + Number(currVal.rep), 0) || 0;
         console.log(total);
         return await this.formatRepByUser(perUserRep, teamId, total);
       })
