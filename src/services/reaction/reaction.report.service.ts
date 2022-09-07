@@ -1,5 +1,5 @@
 import Table from 'easy-table';
-import { getRepository, SimpleConsoleLogger } from 'typeorm';
+import { getRepository } from 'typeorm';
 import { ReportService } from '../../shared/services/report.service';
 import { Rep } from '../../shared/db/models/Rep';
 import { ReactionByUser } from '../../shared/models/reaction/ReactionByUser.model';
