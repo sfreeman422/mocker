@@ -3,6 +3,7 @@ import { Muzzle } from '../../shared/db/models/Muzzle';
 import { ABUSE_PENALTY_TIME, MAX_MUZZLES, MAX_TIME_BETWEEN_MUZZLES, MuzzleRedisTypeEnum } from './constants';
 import { RedisPersistenceService } from '../../shared/services/redis.persistence.service';
 import { StorePersistenceService } from '../store/store.persistence.service';
+import { SINGLE_DAY_MS } from '../counter/constants';
 
 export class MuzzlePersistenceService {
   public static getInstance(): MuzzlePersistenceService {
@@ -71,8 +72,8 @@ export class MuzzlePersistenceService {
     this.redis.setValueWithExpire(
       this.getRedisKeyName(requestorId, teamId, MuzzleRedisTypeEnum.Requestor),
       '2',
-      'EX',
-      MAX_TIME_BETWEEN_MUZZLES,
+      'PX',
+      SINGLE_DAY_MS,
     );
   }
 

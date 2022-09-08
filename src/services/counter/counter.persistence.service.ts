@@ -145,7 +145,7 @@ export class CounterPersistenceService {
         '#general',
         `:flesh: <@${
           counter!.requestorId
-        }> lives in fear and is now muzzled, has lost muzzle privileges for one hour and cannot use counter again for 24 hours. :flesh:`,
+        }> lives in fear and is now muzzled, has lost muzzle privileges for 24 hours and cannot use counter again for 24 hours. :flesh:`,
       );
     }
   }
