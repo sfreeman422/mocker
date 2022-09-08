@@ -80,7 +80,7 @@ export class ReactionReportService extends ReportService {
         perUserRep.map(async userRep => {
           return {
             user: await this.slackService.getUserNameById(userRep.reactingUser, teamId),
-            rep: `${this.getSentiment(userRep.rep, totalRep)} (${userRep.rep})`,
+            rep: `${this.getSentiment(userRep.rep, totalRep)} (${((userRep.rep / totalRep) * 100).toPrecision(3)} %)`,
           };
         }),
       );
