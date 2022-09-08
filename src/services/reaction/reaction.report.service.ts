@@ -12,7 +12,7 @@ export class ReactionReportService extends ReportService {
     });
 
     const message = spendingRep
-      ? `\n*You currently have _${spendingRep.rep}_ rep.*`
+      ? `\n*You currently have _${spendingRep.rep}_ rep available to spend.*`
       : `You do not currently have any rep.`;
 
     const repByUser = await this.getRepByUser(userId, teamId)
@@ -84,7 +84,7 @@ export class ReactionReportService extends ReportService {
           };
         }),
       );
-      return `${Table.print(formattedData)}`;
+      return `${Table.print(formattedData)}\n\n*You have earned a total of _${totalRep}_ in your lifetime.*`;
     }
   }
 
