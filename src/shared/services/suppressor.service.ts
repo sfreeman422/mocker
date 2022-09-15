@@ -280,7 +280,7 @@ export class SuppressorService {
       .format('YYYY-MM-DD HH:mm:ss');
     const end = moment().format('YYYY-MM-DD HH:mm:ss');
     const muzzles = await this.muzzlePersistenceService.getMuzzlesByTimePeriod(requestorId, teamId, start, end);
-    const chanceOfBackfire = 0.05 + muzzles * 0.025;
+    const chanceOfBackfire = 0.05 + muzzles * 0.05;
     console.log(`Chance of Backfire for ${requestorId}: ${chanceOfBackfire}`);
     return Math.random() <= chanceOfBackfire;
   }
