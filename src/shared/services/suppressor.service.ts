@@ -216,7 +216,6 @@ export class SuppressorService {
 
     let suppressedMessage;
     const shouldFallBack =
-      words.length >= 500 ||
       (await this.translationService
         .translate(textWithFallbackReplacments)
         .then(message => (suppressedMessage = message))
@@ -226,12 +225,14 @@ export class SuppressorService {
           return null;
         })) == null;
 
-    if (shouldFallBack) {
-      const message = this.sendFallbackSuppressedMessage(text, dbId, persistenceService);
-      await this.webService.sendMessage(channel, `<@${userId}> says "${message}"`);
-    } else {
-      await this.logTranslateSuppression(text, dbId, persistenceService);
-      await this.webService.sendMessage(channel, `<@${userId}> says "${suppressedMessage}"`);
+    if (words.length <= 250) {
+      if (shouldFallBack) {
+        const message = this.sendFallbackSuppressedMessage(text, dbId, persistenceService);
+        await this.webService.sendMessage(channel, `<@${userId}> says "${message}"`);
+      } else {
+        await this.logTranslateSuppression(text, dbId, persistenceService);
+        await this.webService.sendMessage(channel, `<@${userId}> says "${suppressedMessage}"`);
+      }
     }
   }
 
