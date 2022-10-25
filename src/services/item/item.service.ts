@@ -26,10 +26,9 @@ export class ItemService {
         const isUserMuzzled = await this.suppressorService.isSuppressed(usedOnUser, teamId);
         if (isUserMuzzled) {
           await this.suppressorService.removeSuppression(usedOnUser, teamId);
-          await this.webService.sendMessage(
-            channel,
-            `:zombie: <@${usedOnUser}> has been resurrected by <@${userId}>! :zombie:`,
-          );
+          await this.webService
+            .sendMessage(channel, `:zombie: <@${usedOnUser}> has been resurrected by <@${userId}>! :zombie:`)
+            .catch(e => console.error(e));
           return await this.storeService.useItem('3', userId, teamId, usedOnUser);
         } else {
           return 'Sorry, the user you are trying to resurrect is not currently dead.';

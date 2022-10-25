@@ -43,10 +43,12 @@ export class MuzzleService extends SuppressorService {
           .addBackfire(requestorId, timeToMuzzle, teamId)
           .then(() => {
             this.muzzlePersistenceService.setRequestorCount(requestorId, teamId);
-            this.webService.sendMessage(
-              channel,
-              `:boom: <@${requestorId}> attempted to muzzle <@${userId}> but it backfired! :boom:`,
-            );
+            this.webService
+              .sendMessage(
+                channel,
+                `:boom: <@${requestorId}> attempted to muzzle <@${userId}> but it backfired! :boom:`,
+              )
+              .catch(e => console.error(e));
             resolve(`:boom: Backfired! Better luck next time... :boom:`);
           })
           .catch((e: any) => {
@@ -55,10 +57,12 @@ export class MuzzleService extends SuppressorService {
           });
       } else if (protectedUser) {
         await this.muzzlePersistenceService.setRequestorCount(requestorId, teamId);
-        this.webService.sendMessage(
-          channel,
-          `:innocent: <@${requestorId}> attempted to muzzle <@${userId}> but he was protected by a \`Guardian Angel\`. <@${requestorId}> is now muzzled. :innocent:`,
-        );
+        this.webService
+          .sendMessage(
+            channel,
+            `:innocent: <@${requestorId}> attempted to muzzle <@${userId}> but he was protected by a \`Guardian Angel\`. <@${requestorId}> is now muzzled. :innocent:`,
+          )
+          .catch(e => console.error(e));
 
         const userToCredit = await this.storePersistenceService
           .getUserOfUsedItem(protectedUser)

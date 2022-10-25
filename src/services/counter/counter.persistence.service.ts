@@ -141,12 +141,14 @@ export class CounterPersistenceService {
       this.counterMuzzle(counter!.requestorId, id);
       this.muzzlePersistenceService.removeMuzzlePrivileges(counter!.requestorId, teamId);
       this.removeCounterPrivileges(counter!.requestorId);
-      this.webService.sendMessage(
-        '#general',
-        `:flesh: <@${
-          counter!.requestorId
-        }> lives in fear and is now muzzled, has lost muzzle privileges for 24 hours and cannot use counter again for 24 hours. :flesh:`,
-      );
+      this.webService
+        .sendMessage(
+          '#general',
+          `:flesh: <@${
+            counter!.requestorId
+          }> lives in fear and is now muzzled, has lost muzzle privileges for 24 hours and cannot use counter again for 24 hours. :flesh:`,
+        )
+        .catch(e => console.error(e));
     }
   }
 

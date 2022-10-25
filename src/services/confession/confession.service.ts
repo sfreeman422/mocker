@@ -8,14 +8,10 @@ export class ConfessionService {
   public confessionPersistenceService = ConfessionPersistenceService.getInstance();
 
   public async confess(requestorId: string, teamId: string, channelId: string, confession: string): Promise<void> {
-    //     const message = (await this.shouldBackfire(requestorId, teamId))
-    //       ? `<@${requestorId}> has confessed:
-    // \`${confession}\``
-    //       : `Someone has confessed:
-    // \`${confession}\``;
-    //     this.webService.sendMessage(channelId, message);
     console.log(`${requestorId} - ${teamId} attempted to confess ${confession} in ${channelId}`);
-    this.webService.sendMessage(channelId, `:chicken: <@${requestorId}> :chicken: says: \`${confession}\``);
+    this.webService
+      .sendMessage(channelId, `:chicken: <@${requestorId}> :chicken: says: \`${confession}\``)
+      .catch(e => console.error(e));
   }
 
   public async shouldBackfire(requestorId: string, teamId: string): Promise<boolean> {

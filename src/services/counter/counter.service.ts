@@ -67,10 +67,12 @@ export class CounterService extends SuppressorService {
     if (isUsed && channel) {
       this.counterPersistenceService.counterMuzzle(requestorId, id);
       this.muzzlePersistenceService.removeMuzzlePrivileges(requestorId, teamId);
-      this.webService.sendMessage(
-        channel,
-        `:crossed_swords: <@${userId}> successfully countered <@${requestorId}>! <@${requestorId}> has lost muzzle privileges for 24 hours and is muzzled for the next 5 minutes! :crossed_swords:`,
-      );
+      this.webService
+        .sendMessage(
+          channel,
+          `:crossed_swords: <@${userId}> successfully countered <@${requestorId}>! <@${requestorId}> has lost muzzle privileges for 24 hours and is muzzled for the next 5 minutes! :crossed_swords:`,
+        )
+        .catch(e => console.error(e));
     }
   }
 }

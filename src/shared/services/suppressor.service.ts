@@ -228,10 +228,12 @@ export class SuppressorService {
     if (words.length <= 250) {
       if (shouldFallBack) {
         const message = this.sendFallbackSuppressedMessage(text, dbId, persistenceService);
-        await this.webService.sendMessage(channel, `<@${userId}> says "${message}"`);
+        await this.webService.sendMessage(channel, `<@${userId}> says "${message}"`).catch(e => console.error(e));
       } else {
         await this.logTranslateSuppression(text, dbId, persistenceService);
-        await this.webService.sendMessage(channel, `<@${userId}> says "${suppressedMessage}"`);
+        await this.webService
+          .sendMessage(channel, `<@${userId}> says "${suppressedMessage}"`)
+          .catch(e => console.error(e));
       }
     }
   }

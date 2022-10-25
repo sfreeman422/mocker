@@ -54,14 +54,16 @@ async function handleMuzzledMessage(request: EventRequest): Promise<void> {
       muzzlePersistenceService.addMuzzleTime(request.event.user, request.team_id, ABUSE_PENALTY_TIME);
       webService.deleteMessage(request.event.channel, request.event.ts, request.event.user);
       muzzlePersistenceService.trackDeletedMessage(+muzzleId, request.event.text);
-      webService.sendMessage(
-        request.event.channel,
-        `:rotating_light: <@${
-          request.event.user
-        }> attempted to @ while muzzled or change the channel topic! Muzzle increased by ${getTimeString(
-          ABUSE_PENALTY_TIME,
-        )} :rotating_light:`,
-      );
+      webService
+        .sendMessage(
+          request.event.channel,
+          `:rotating_light: <@${
+            request.event.user
+          }> attempted to @ while muzzled or change the channel topic! Muzzle increased by ${getTimeString(
+            ABUSE_PENALTY_TIME,
+          )} :rotating_light:`,
+        )
+        .catch(e => console.error(e));
     }
   }
 }
@@ -85,12 +87,14 @@ async function handleBackfire(request: EventRequest): Promise<void> {
     backfireService.addBackfireTime(request.event.user, request.team_id, ABUSE_PENALTY_TIME);
     webService.deleteMessage(request.event.channel, request.event.ts, request.event.user);
     backfireService.trackDeletedMessage(+backfireId, request.event.text);
-    webService.sendMessage(
-      request.event.channel,
-      `:rotating_light: <@${request.event.user}> attempted to @ while muzzled! Muzzle increased by ${getTimeString(
-        ABUSE_PENALTY_TIME,
-      )} :rotating_light:`,
-    );
+    webService
+      .sendMessage(
+        request.event.channel,
+        `:rotating_light: <@${request.event.user}> attempted to @ while muzzled! Muzzle increased by ${getTimeString(
+          ABUSE_PENALTY_TIME,
+        )} :rotating_light:`,
+      )
+      .catch(e => console.error(e));
   }
 }
 
@@ -109,12 +113,14 @@ async function handleCounterMuzzle(request: EventRequest): Promise<void> {
     console.log(`${userName} attempted to tag someone. Counter Muzzle increased by ${ABUSE_PENALTY_TIME}!`);
     counterPersistenceService.addCounterMuzzleTime(request.event.user, ABUSE_PENALTY_TIME);
     webService.deleteMessage(request.event.channel, request.event.ts, request.event.user);
-    webService.sendMessage(
-      request.event.channel,
-      `:rotating_light: <@${request.event.user}> attempted to @ while countered! Muzzle increased by ${getTimeString(
-        ABUSE_PENALTY_TIME,
-      )} :rotating_light:`,
-    );
+    webService
+      .sendMessage(
+        request.event.channel,
+        `:rotating_light: <@${request.event.user}> attempted to @ while countered! Muzzle increased by ${getTimeString(
+          ABUSE_PENALTY_TIME,
+        )} :rotating_light:`,
+      )
+      .catch(e => console.error(e));
   }
 }
 

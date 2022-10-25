@@ -50,7 +50,7 @@ defineController.post('/define', async (req: Request, res: Response) => {
         ],
       });
 
-      webService.sendMessage(request.channel_id, text, blocks);
+      webService.sendMessage(request.channel_id, text, blocks).catch(e => console.error(e));
     }
   }
 });
