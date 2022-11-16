@@ -39,7 +39,8 @@ export class StorePersistenceService {
     const price = await getManager().query(
       `SELECT * FROM price WHERE itemId=${itemId} AND teamId='${teamId}' AND createdAt=(SELECT MAX(createdAt) FROM price WHERE itemId=${itemId} AND teamId='${teamId}');`,
     );
-    const itemWithPrice = { ...item, price: price[0].price };
+    // Gargbage
+    const itemWithPrice = item ? { ...item, price: price[0].price } : undefined;
     return itemWithPrice;
   }
 
