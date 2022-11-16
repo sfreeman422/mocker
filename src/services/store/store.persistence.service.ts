@@ -35,13 +35,17 @@ export class StorePersistenceService {
   }
 
   async getItem(itemId: number, teamId: string): Promise<any | undefined> {
-    const item = await getRepository(Item).findOne({ id: itemId });
-    const price = await getManager().query(
-      `SELECT * FROM price WHERE itemId=${itemId} AND teamId='${teamId}' AND createdAt=(SELECT MAX(createdAt) FROM price WHERE itemId=${itemId} AND teamId='${teamId}');`,
-    );
-    // Gargbage
-    const itemWithPrice = item ? { ...item, price: price[0].price } : undefined;
-    return itemWithPrice;
+    if (isNaN(itemId)) {
+      return undefined;
+    } else {
+      const item = await getRepository(Item).findOne({ id: itemId });
+      const price = await getManager().query(
+        `SELECT * FROM price WHERE itemId=${itemId} AND teamId='${teamId}' AND createdAt=(SELECT MAX(createdAt) FROM price WHERE itemId=${itemId} AND teamId='${teamId}');`,
+      );
+      // Gargbage
+      const itemWithPrice = item ? { ...item, price: price[0].price } : undefined;
+      return itemWithPrice;
+    }
   }
 
   // Returns active OFFENSIVE items.
