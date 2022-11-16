@@ -31,8 +31,12 @@ export class StoreService {
 
   async isValidItem(itemId: string, teamId: string): Promise<boolean> {
     const id = +itemId;
-    const isItem = await this.storePersistenceService.getItem(id, teamId);
-    return !!isItem;
+    if (isNaN(id)) {
+      return false;
+    } else {
+      const isItem = await this.storePersistenceService.getItem(id, teamId);
+      return !!isItem;
+    }
   }
 
   async canAfford(itemId: string, userId: string, teamId: string): Promise<boolean> {
@@ -65,6 +69,9 @@ export class StoreService {
 
   async useItem(itemId: string, userId: string, teamId: string, userIdForItem?: string): Promise<string> {
     const id = +itemId;
+    if (isNaN(id)) {
+      return `Sorry, ${itemId} is not a valid item.`;
+    }
     return await this.storePersistenceService.useItem(id, userId, teamId, userIdForItem);
   }
 
