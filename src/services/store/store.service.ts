@@ -31,7 +31,7 @@ export class StoreService {
 
   async isValidItem(itemId: string, teamId: string): Promise<boolean> {
     const id = +itemId;
-    if (isNaN(id)) {
+    if (isNaN(id) || !Number.isFinite(itemId)) {
       return false;
     } else {
       const isItem = await this.storePersistenceService.getItem(id, teamId);
