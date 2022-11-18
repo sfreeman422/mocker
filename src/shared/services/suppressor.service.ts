@@ -99,6 +99,10 @@ export class SuppressorService {
           .then(user => user?.name !== 'muzzle' && user?.slackId !== 'ULG8SJRFF')
       : false;
 
+    console.log(request.event.blocks);
+    console.log(request.event.text);
+    console.log(request.event.user);
+
     if (isBot) {
       let userIdByEventText;
       let userIdByAttachmentText;
