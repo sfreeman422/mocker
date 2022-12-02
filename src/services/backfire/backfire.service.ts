@@ -13,7 +13,9 @@ export class BackfireService extends SuppressorService {
     timestamp: string,
     teamId: string,
   ): Promise<void> {
-    const backfireId: string | null = await this.backfirePersistenceService.getBackfireByUserId(userId, teamId);
+    const backfireId: number | undefined = await this.backfirePersistenceService
+      .getBackfireByUserId(userId, teamId)
+      .then(id => (id ? +id : undefined));
     if (backfireId) {
       const suppressions = await this.backfirePersistenceService.getSuppressions(userId, teamId);
       if (suppressions && +suppressions < MAX_SUPPRESSIONS) {
@@ -21,13 +23,13 @@ export class BackfireService extends SuppressorService {
         this.sendSuppressedMessage(channel, userId, text, timestamp, +backfireId, this.backfirePersistenceService);
       } else {
         this.webService.deleteMessage(channel, timestamp, userId);
-        this.backfirePersistenceService.trackDeletedMessage(+backfireId, text);
+        this.backfirePersistenceService.trackDeletedMessage(backfireId, text);
       }
     }
   }
 
-  public async getBackfire(userId: string, teamId: string): Promise<string | null> {
-    return await this.backfirePersistenceService.getBackfireByUserId(userId, teamId);
+  public getBackfire(userId: string, teamId: string): Promise<number | undefined> {
+    return this.backfirePersistenceService.getBackfireByUserId(userId, teamId);
   }
 
   public trackDeletedMessage(id: number, text: string): void {

@@ -26,12 +26,12 @@ export class SlackService {
    * Retrieves the user id from a string.
    * Expected format is <@U235KLKJ>
    */
-  public getUserId(user: string): string {
+  public getUserId(user: string): string | undefined {
     if (!user) {
-      return '';
+      return undefined;
     }
     const regArray = user.match(USER_ID_REGEX);
-    return regArray ? regArray[0].slice(2) : '';
+    return regArray ? regArray[0].slice(2) : undefined;
   }
 
   public getUserIdByName(userName: string, teamId: string): Promise<string | undefined> {
@@ -59,13 +59,20 @@ export class SlackService {
    * Retrieves a Slack user id from the various fields in which a userId can exist inside of a bot response.
    */
   public getBotId(
-    fromText: string | undefined,
-    fromAttachmentText: string | undefined,
-    fromPretext: string | undefined,
-    fromCallbackId: string | undefined,
-    fromBlocksId?: string | undefined,
+    fromText?: string,
+    fromAttachmentText?: string,
+    fromPretext?: string,
+    fromCallbackId?: string,
+    fromBlocksId?: string,
+    fromBlocksIdSpoiler?: string,
   ): string | undefined {
-    return fromText || fromAttachmentText || fromPretext || fromCallbackId || fromBlocksId;
+    console.log(fromText);
+    console.log(fromAttachmentText);
+    console.log(fromPretext);
+    console.log(fromCallbackId);
+    console.log(fromBlocksId);
+    console.log(fromBlocksIdSpoiler);
+    return fromText || fromAttachmentText || fromPretext || fromCallbackId || fromBlocksId || fromBlocksIdSpoiler;
   }
   /**
    * Determines whether or not a user is trying to @user, @channel or @here while muzzled.
@@ -90,22 +97,23 @@ export class SlackService {
   /**
    * Retrieves a list of all users.
    */
-  public getAllUsers(shouldSave?: boolean): Promise<SlackUser[]> {
+  public async getAllUsers(): Promise<SlackUserFromDB[]> {
     console.log('Retrieving new user list...');
+    const cached = await this.persistenceService.getCachedUsers();
+    if (!!cached) {
+      return cached as SlackUserFromDB[];
+    }
     return this.web
       .getAllUsers()
       .then(resp => {
         console.log('New user list has been retrieved!');
-        if (shouldSave) {
-          this.persistenceService.saveUsers(resp.members as SlackUser[]);
-        }
-        return resp.members as SlackUser[];
+        return this.persistenceService.saveUsers(resp.members as SlackUser[]).catch(e => e);
       })
       .catch(e => {
         console.error('Failed to retrieve users', e);
         console.timeEnd('retrieved user list in: ');
-        console.error('Retrying in 5 seconds...');
-        setTimeout(() => this.getAllUsers(), 5000);
+        console.error('Retrying in 60 seconds...');
+        setTimeout(() => this.getAllUsers(), 60000);
         throw new Error('Unable to retrieve users');
       });
   }
