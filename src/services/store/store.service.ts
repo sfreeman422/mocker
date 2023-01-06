@@ -7,15 +7,15 @@ export class StoreService {
 
   async listItems(slackId: string, teamId: string): Promise<string> {
     const items = await this.storePersistenceService.getItems(teamId);
-    const rep = await this.reactionPersistenceService.getUserRep(slackId, teamId);
-    let view = `Welcome to the Muzzle Store! \n \n Purchase items by typing \`/buy item_id\` where item_id is the number shown below! \n \n Once purchased, you can use items by typing \`/use item_id\` or you can view them in your inventory by typing \`/inventory\`. \n \n`;
+    const { totalRepAvailable } = await this.reactionPersistenceService.getTotalRep(slackId, teamId);
+    let view = `Welcome to the Muzzle Store! \n \n Purchase items by typing \`/buy item_id\` where item_id is the number shown below! \n \n Once purchased, the item will be immediately used. \n \n`;
     items.map(item => {
       view += `*${item.id}. ${item.name}* \n *Cost:* ${item.price} rep \n *Description:* ${
         item.description
-      } \n *How to Use:* ${item.requiresUser ? `\`/use ${item.id} @user\`` : `\`/use ${item.id}\``} \n \n`;
+      } \n *How to Use:* ${item.requiresUser ? `\`/buy ${item.id} @user\`` : `\`/buy ${item.id}\``} \n \n`;
     });
 
-    view += `You currently have *${rep ? rep : 0} Rep* to spend. Spend it wisely!`;
+    view += `You currently have *${totalRepAvailable} Rep* to spend. Spend it wisely!`;
     return view;
   }
 
@@ -31,7 +31,7 @@ export class StoreService {
 
   async isValidItem(itemId: string, teamId: string): Promise<boolean> {
     const id = +itemId;
-    if (isNaN(id) || !Number.isFinite(itemId)) {
+    if (isNaN(id) || !Number.isFinite(id)) {
       return false;
     } else {
       const isItem = await this.storePersistenceService.getItem(id, teamId);
@@ -42,21 +42,13 @@ export class StoreService {
   async canAfford(itemId: string, userId: string, teamId: string): Promise<boolean> {
     const id = +itemId;
     const price: number | undefined = (await this.storePersistenceService.getItem(id, teamId))?.price;
-    const userRep: number | undefined = await this.reactionPersistenceService.getUserRep(userId, teamId);
-    return userRep && price ? price <= userRep : false;
+    const { totalRepAvailable } = await this.reactionPersistenceService.getTotalRep(userId, teamId);
+    return totalRepAvailable && price ? price <= totalRepAvailable : false;
   }
 
-  async buyItem(itemId: string, userId: string, teamId: string): Promise<string> {
+  buyItem(itemId: string, userId: string, teamId: string): Promise<string> {
     const id = +itemId;
-    return await this.storePersistenceService.buyItem(id, userId, teamId);
-  }
-
-  async isOwnedByUser(itemId: string | undefined, userId: string, teamId: string): Promise<boolean> {
-    if (itemId) {
-      const id = +itemId;
-      return await this.storePersistenceService.isOwnedByUser(id, userId, teamId);
-    }
-    return false;
+    return this.storePersistenceService.buyItem(id, userId, teamId);
   }
 
   async isUserRequired(itemId: string | undefined): Promise<boolean> {
@@ -72,17 +64,14 @@ export class StoreService {
     if (isNaN(id)) {
       return `Sorry, ${itemId} is not a valid item.`;
     }
-    return await this.storePersistenceService.useItem(id, userId, teamId, userIdForItem);
+    return this.storePersistenceService.useItem(id, userId, teamId, userIdForItem);
   }
 
-  async getInventory(userId: string, teamId: string): Promise<string> {
-    const inventory = await this.storePersistenceService.getInventory(userId, teamId);
-    const rep = await this.reactionPersistenceService.getUserRep(userId, teamId);
-    let view = '*Inventory* \n Use items by typing `/use item_id` where item_id is the number shown below. \n \n';
-    inventory.map(inventory => {
-      view += `*${inventory.name}* \n *Description:* ${inventory.description} \n *Item_Id:* ${inventory.itemId} \n \n`;
-    });
-    view += `Rep: ${rep ? rep : 0}`;
-    return view;
+  isItemActive(userId: string, teamId: string, itemId: number): Promise<boolean> {
+    return this.storePersistenceService.isItemActive(userId, teamId, itemId);
+  }
+
+  removeEffect(userId: string, teamId: string, itemId: number): Promise<number> {
+    return this.storePersistenceService.removeKey(this.storePersistenceService.getRedisKeyName(userId, teamId, itemId));
   }
 }

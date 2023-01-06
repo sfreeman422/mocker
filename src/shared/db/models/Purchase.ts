@@ -10,9 +10,9 @@ export class Purchase {
   @Column()
   @OneToMany(
     _type => SlackUser,
-    slackUser => slackUser.id,
+    slackUser => slackUser.slackId,
   )
-  public user!: number;
+  public user!: string;
 
   @Column()
   @OneToMany(
