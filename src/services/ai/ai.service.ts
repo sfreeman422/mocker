@@ -11,6 +11,10 @@ export class AIService {
     }),
   );
 
+  public decrementDaiyRequests(userId: string, teamId: string): Promise<string | null> {
+    return this.redis.decrementDailyRequests(userId, teamId);
+  }
+
   public isAlreadyInflight(userId: string, teamId: string): Promise<boolean> {
     return this.redis.getInflight(userId, teamId).then(x => !!x);
   }
@@ -24,21 +28,22 @@ export class AIService {
     await this.redis.setDailyRequests(userId, teamId);
 
     return this.openai
-      .createCompletion({
-        model: 'text-davinci-003',
-        prompt: text,
+      .createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'system', content: text }],
         // eslint-disable-next-line @typescript-eslint/camelcase
         max_tokens: 1000,
+        user: `${userId}-DaBros2016`,
       })
-      .then(x => {
-        console.log(x.data);
-        return x.data.choices[0].text?.trim();
+      .then(async x => {
+        await this.redis.removeInflight(userId, teamId);
+        return x.data.choices[0].message?.content?.trim();
       })
       .catch(async e => {
+        await this.redis.removeInflight(userId, teamId);
         await this.redis.decrementDailyRequests(userId, teamId);
         throw e;
-      })
-      .finally(() => this.redis.removeInflight(userId, teamId));
+      });
   }
 
   public async generateImage(userId: string, teamId: string, text: string): Promise<string> {
@@ -51,8 +56,11 @@ export class AIService {
         size: '256x256',
         // eslint-disable-next-line @typescript-eslint/camelcase
         response_format: 'b64_json',
+        user: `${userId}-DaBros2016`,
       })
-      .then(x => {
+      .then(async x => {
+        await this.redis.removeInflight(userId, teamId);
+
         // eslint-disable-next-line @typescript-eslint/camelcase
         const { b64_json } = x.data.data[0];
         // eslint-disable-next-line @typescript-eslint/camelcase
@@ -64,9 +72,9 @@ export class AIService {
         }
       })
       .catch(async e => {
+        await this.redis.removeInflight(userId, teamId);
         await this.redis.decrementDailyRequests(userId, teamId);
         throw e;
-      })
-      .finally(async () => await this.redis.removeInflight(userId, teamId));
+      });
   }
 }

@@ -1,3 +1,4 @@
+import datetime
 import mysql.connector
 import os
 import requests
@@ -50,6 +51,45 @@ def getQuote():
     return {
       "error": "Issue with quote API - non 200 status code"
     }
+  
+def getOnThisDay():
+  date = datetime.datetime.now()
+  day = date.day
+  month = date.month
+  if (day <= 9):
+    day = "0"+str(day)
+  if (month <= 9):
+    month = "0"+str(month)
+
+  url="https://en.wikipedia.org/api/rest_v1/feed/onthisday/all/{month}/{day}".format(month=month, day=day)
+  onThisDay = session.get(url)
+  if (onThisDay):
+    onThisDayJson = onThisDay.json()
+    otd = onThisDayJson["selected"][0]
+    firstPage = otd["pages"][0]
+    print(firstPage)
+    hasThumbnail = firstPage.get("thumbnail") != None
+    return { "text": otd["text"], "url":firstPage["content_urls"]["desktop"]["page"], "image": firstPage["thumbnail"]["source"] if hasThumbnail else None, "title": firstPage["title"]}
+  else:
+    raise Exception("Unable to retrieve Wikipedia On This Day")
+
+def getJoke(ctx):
+  url = "https://v2.jokeapi.dev/joke/Miscellaneous,Pun,Spooky?blacklistFlags=racist,sexist"
+  joke = session.get(url)
+
+  if(joke):
+    jokeJson = joke.json()
+    print(jokeJson)
+    if (isNewJoke(jokeJson["id"], ctx)):
+      addJokeIdToDb(jokeJson["id"],ctx)
+      if (jokeJson["type"] == "single"):
+        return jokeJson["joke"]
+      elif(jokeJson["type"] == "twopart"):
+        return "{setup} \n\n {delivery}".format(setup=jokeJson["setup"], delivery=jokeJson["delivery"])
+    else:
+      getJoke(ctx)
+  else:
+    raise Exception("Unable to retrieve Joke of the Day")
 
 def getFact():
   url = random.choice(urls)
@@ -78,9 +118,19 @@ def addIdToDb(fact, source, ctx):
   mycursor.execute("INSERT INTO fact (fact, source) VALUES (%s, %s);", (fact, source))
   ctx.commit()
 
-def sendSlackMessage(facts):
-  quote = getQuote()
-  blocks = createBlocks(quote, facts)
+def isNewJoke(id, ctx):
+  mycursor = ctx.cursor(dictionary=True, buffered=True)
+  mycursor.execute("SELECT id FROM joke WHERE id=%s;", (str(id),))
+  jokes = mycursor.fetchall()
+  return len(jokes) == 0
+
+def addJokeIdToDb(id, ctx):
+  mycursor = ctx.cursor(dictionary=True, buffered=True)
+  mycursor.execute("INSERT INTO joke (id) VALUES (%s);", (str(id),))
+  ctx.commit()
+
+def sendSlackMessage(facts, joke, quote, onThisDay):
+  blocks = createBlocks(quote, facts, onThisDay, joke)
   slack_token = os.environ["MUZZLE_BOT_TOKEN"]
   client = WebClient(token=slack_token)
 
@@ -95,7 +145,7 @@ def sendSlackMessage(facts):
       print(e)
       assert e.response["error"]
 
-def createBlocks(quote, facts):
+def createBlocks(quote, facts, otd, joke):
   blocks = [
     {
       "type": "header",
@@ -106,7 +156,10 @@ def createBlocks(quote, facts):
       }
     }]
   if (quote and 'error' not in quote):
-    print(quote)
+    blocks.append({
+    "type": "divider"
+    })
+
     blocks.append({
         "type": "section",
         "fields": [
@@ -123,17 +176,42 @@ def createBlocks(quote, facts):
         "text": "{quote}".format(quote=quote["text"])
       }
     })
-    blocks.append({
-        "type": "divider"
-      })
-  
+
+  blocks.append({
+    "type": "divider"
+  })
+
   blocks.append(
       {
         "type": "section",
         "fields": [
           {
             "type": "mrkdwn",
-            "text": "*Today's Facts:*"
+            "text": "*Daily Joke:*"
+          }
+        ]
+      })
+
+  blocks.append(
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "{joke}".format(joke=joke)
+      }
+    })
+
+  blocks.append({
+    "type": "divider"
+  })
+
+  blocks.append(
+      {
+        "type": "section",
+        "fields": [
+          {
+            "type": "mrkdwn",
+            "text": "*Daily Facts:*"
           }
         ]
       })
@@ -150,7 +228,46 @@ def createBlocks(quote, facts):
         "text": "{fact}".format(fact=factString)
       }
     })
-  
+
+  blocks.append({
+        "type": "divider"
+      })
+
+
+  blocks.append(
+    {
+      "type": "section",
+      "fields": [
+        {
+          "type": "mrkdwn",
+          "text": "*On This Day:*"
+        }
+      ]
+    })
+
+  blocks.append(
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "{text} \n\n <{url}|Learn More>".format(text=otd["text"], url=otd["url"])
+      }
+    }
+  )
+
+  if (otd["image"]):
+    blocks.append({
+      "accessory": {
+        "type": "image",
+        "image_url": "{url}".format(url=otd["image"]),
+        "alt_text": "{title}".format(title=otd["title"])
+      }
+      })
+
+  blocks.append({
+    "type": "divider"
+  })
+
   blocks.append(
     {
         "type": "context",
@@ -186,7 +303,11 @@ def main():
 
 
   facts = getFacts(cnx)
-  sendSlackMessage(facts)
+  joke = getJoke(cnx)
+  quote = getQuote()
+  onThisDay = getOnThisDay()
+
+  sendSlackMessage(facts, joke, quote, onThisDay)
 
 
 main()
