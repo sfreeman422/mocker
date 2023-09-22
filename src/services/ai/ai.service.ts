@@ -29,7 +29,7 @@ export class AIService {
 
     return this.openai
       .createChatCompletion({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4',
         messages: [{ role: 'system', content: text }],
         // eslint-disable-next-line @typescript-eslint/camelcase
         max_tokens: 1000,
