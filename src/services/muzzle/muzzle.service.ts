@@ -3,13 +3,25 @@ import { getTimeString, getTimeToMuzzle } from './muzzle-utilities';
 import { SuppressorService } from '../../shared/services/suppressor.service';
 import { CounterService } from '../counter/counter.service';
 import { StorePersistenceService } from '../store/store.persistence.service';
+import { Muzzle } from '../../shared/db/models/Muzzle';
 
 export class MuzzleService extends SuppressorService {
   private counterService = new CounterService();
   private storePersistenceService = StorePersistenceService.getInstance();
 
+  public permaMuzzle(impersonatingUserId: string, teamId: string): Promise<Muzzle> {
+    console.log(`perma-muzzling ${impersonatingUserId}`);
+
+    return this.muzzlePersistenceService.addPermaMuzzle(impersonatingUserId, teamId);
+  }
+
+  public removePermaMuzzle(impersonatingUserId: string, teamId: string): Promise<boolean> {
+    console.log('removing perma-muzzle for', impersonatingUserId);
+    return this.muzzlePersistenceService.removePermaMuzzle(impersonatingUserId, teamId);
+  }
+
   public async addUserToMuzzled(userId: string, requestorId: string, teamId: string, channel: string): Promise<string> {
-    const shouldBackFire = requestorId === 'U300D7UDD' || (await this.shouldBackfire(requestorId, teamId));
+    const shouldBackFire = await this.shouldBackfire(requestorId, teamId);
     const userName = await this.slackService.getUserNameById(userId, teamId);
     const requestorName = await this.slackService.getUserNameById(requestorId, teamId);
     const counter = this.counterPersistenceService.getCounterByRequestorId(userId);

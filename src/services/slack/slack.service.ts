@@ -94,6 +94,19 @@ export class SlackService {
     return channel?.name || '';
   }
 
+  public getImpersonatedUser(userId: string): Promise<SlackUser | undefined> {
+    return this.web.getAllUsers().then(resp => {
+      const potentialImpersonator = (resp.members as SlackUser[]).find((user: SlackUser) => user.id === userId);
+      return (resp.members as SlackUser[]).find(
+        (victim: SlackUser) =>
+          (victim?.profile?.display_name?.toLowerCase() ===
+            potentialImpersonator?.profile?.display_name?.toLowerCase() ||
+            victim?.profile?.real_name?.toLowerCase() === potentialImpersonator?.profile.real_name?.toLowerCase()) &&
+          victim.id !== potentialImpersonator?.id,
+      );
+    });
+  }
+
   /**
    * Retrieves a list of all users.
    */

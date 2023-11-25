@@ -64,8 +64,7 @@ export class SuppressorService {
     return (
       (await this.muzzlePersistenceService.isUserMuzzled(userId, teamId)) ||
       (await this.backfirePersistenceService.isBackfire(userId, teamId)) ||
-      (await this.counterPersistenceService.isCounterMuzzled(userId)) ||
-      userId === 'U300D7UDD'
+      (await this.counterPersistenceService.isCounterMuzzled(userId))
     );
   }
 
@@ -291,7 +290,7 @@ export class SuppressorService {
 
     const muzzles = await this.muzzlePersistenceService.getMuzzlesByTimePeriod(requestorId, teamId, start, end);
     console.log(`Number of muzzles for ${requestorId}: ${muzzles}`);
-    const chanceOfBackfire = 0.05 + muzzles * 0.05;
+    const chanceOfBackfire = 0.05 + muzzles * 0.1;
     console.log(`Chance of Backfire for ${requestorId}: ${chanceOfBackfire}`);
     return Math.random() <= chanceOfBackfire;
   }

@@ -168,6 +168,9 @@ function handleNewChannelCreated(): void {
 }
 
 function handleActivity(request: EventRequest): void {
+  if (request.event.type !== 'user_profile_changed') {
+    return;
+  }
   activityPersistenceService.logActivity(request);
   activityPersistenceService.updateLatestHotness();
 }
@@ -189,13 +192,11 @@ eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
     console.time('respond-to-event');
     res.status(200).send();
     const request: EventRequest = req.body;
-    console.log(request);
     const isNewUserAdded = request.event.type === 'team_join';
     const isNewChannelCreated = request.event.type === 'channel_created';
+    const isUserProfileChanged = request.event.type === 'user_profile_changed';
     const isReaction = request.event.type === 'reaction_added' || request.event.type === 'reaction_removed';
-    const isMuzzled =
-      request.event.user === 'U300D7UDD' ||
-      (await muzzlePersistenceService.isUserMuzzled(request.event.user, request.team_id));
+    const isMuzzled = await muzzlePersistenceService.isUserMuzzled(request.event.user, request.team_id);
     const isUserBackfired = await backfirePersistenceService.isBackfire(request.event.user, request.team_id);
     const isUserCounterMuzzled = await counterPersistenceService.isCounterMuzzled(request.event.user);
     const isMuzzleBot = request.event.user === 'ULG8SJRFF';
@@ -217,8 +218,30 @@ eventController.post('/muzzle/handle', async (req: Request, res: Response) => {
       handleReaction(request);
     } else if (isInHotAndNotBot) {
       deleteMessage(request);
-    } else if (!isReaction && !isNewChannelCreated && !isNewUserAdded) {
+    } else if (!isReaction && !isNewChannelCreated && !isNewUserAdded && !isUserProfileChanged) {
       logSentiment(request);
+    } else if (isUserProfileChanged) {
+      console.log(request);
+      const userWhoIsBeingImpersonated = await slackService.getImpersonatedUser(
+        ((request.event.user as unknown) as any).id,
+      );
+      console.log('userWhoIsBeingImpersonated', userWhoIsBeingImpersonated);
+      if (userWhoIsBeingImpersonated) {
+        // muzzle the user who is attempting to impersonate, and do it until the user changes their name back
+        await muzzleService.permaMuzzle(((request.event.user as unknown) as any).id, request.team_id).then(() => {
+          return webService
+            .sendMessage(
+              '#general',
+              `:cop: <@${((request.event.user as unknown) as any).id}> is impersonating <@${
+                userWhoIsBeingImpersonated.id
+              }>! They are now muzzled until they assume their normal identity. :cop:`,
+            )
+            .catch(e => console.error(e));
+        });
+      } else {
+        // unmuzzle the user who was impersonated, or do nothing if this person was not impersonating
+        await muzzleService.removePermaMuzzle(((request.event.user as unknown) as any).id, request.team_id);
+      }
     }
     handleActivity(request);
     console.timeEnd('respond-to-event');
