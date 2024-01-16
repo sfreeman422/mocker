@@ -66,12 +66,6 @@ export class SlackService {
     fromBlocksId?: string,
     fromBlocksIdSpoiler?: string,
   ): string | undefined {
-    console.log(fromText);
-    console.log(fromAttachmentText);
-    console.log(fromPretext);
-    console.log(fromCallbackId);
-    console.log(fromBlocksId);
-    console.log(fromBlocksIdSpoiler);
     return fromText || fromAttachmentText || fromPretext || fromCallbackId || fromBlocksId || fromBlocksIdSpoiler;
   }
   /**
@@ -97,13 +91,16 @@ export class SlackService {
   public getImpersonatedUser(userId: string): Promise<SlackUser | undefined> {
     return this.web.getAllUsers().then(resp => {
       const potentialImpersonator = (resp.members as SlackUser[]).find((user: SlackUser) => user.id === userId);
-      return (resp.members as SlackUser[]).find(
-        (victim: SlackUser) =>
-          (victim?.profile?.display_name?.toLowerCase() ===
-            potentialImpersonator?.profile?.display_name?.toLowerCase() ||
-            victim?.profile?.real_name?.toLowerCase() === potentialImpersonator?.profile.real_name?.toLowerCase()) &&
-          victim.id !== potentialImpersonator?.id,
-      );
+      return (resp.members as SlackUser[]).find((victim: SlackUser) => {
+        const hasSameDisplayName =
+          !!victim?.profile?.display_name &&
+          victim?.profile?.display_name?.toLowerCase() === potentialImpersonator?.profile?.display_name?.toLowerCase();
+        const hasSameRealName =
+          !!victim?.profile?.real_name &&
+          victim?.profile?.real_name?.toLowerCase() === potentialImpersonator?.profile.real_name?.toLowerCase();
+
+        return (hasSameDisplayName || hasSameRealName) && victim.id !== potentialImpersonator?.id;
+      });
     });
   }
 
