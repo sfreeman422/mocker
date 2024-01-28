@@ -20,9 +20,11 @@ export class HistoryPersistenceService {
       return;
     }
 
-    const user: SlackUser | undefined = await getRepository(SlackUser).findOne({
-      slackId: request?.event?.user,
-      teamId: request?.team_id,
+    const user: SlackUser | null = await getRepository(SlackUser).findOne({
+      where: {
+        slackId: request?.event?.user,
+        teamId: request?.team_id,
+      },
     });
     const message = new Message();
     message.channel = request.event.channel || request.event.item.channel;
@@ -32,11 +34,28 @@ export class HistoryPersistenceService {
     return getRepository(Message).insert(message);
   }
 
-  async getHistory(request: SlashCommandRequest): Promise<MessageWithName[]> {
+  async getHistory(request: SlashCommandRequest, isDaily: boolean): Promise<MessageWithName[]> {
     const teamId = request.team_id;
     const channel = request.channel_id;
-    const query = `SELECT * FROM (select message.*, slack_user.name from message INNER JOIN slack_user ON slack_user.id=message.userIdId WHERE message.userIdId != 39 AND message.teamId=? AND message.channel=? AND message.message != '' ORDER BY message.createdAt DESC LIMIT 100) as messages ORDER BY messages.createdAt ASC;`;
+    const interval = isDaily ? 'INTERVAL 1 DAY' : 'INTERVAL 1 HOUR';
+    const query = `
+    (
+    SELECT message.*, slack_user.name
+    FROM message 
+    INNER JOIN slack_user ON slack_user.id=message.userIdId 
+    WHERE message.userIdId != 39 AND message.teamId=? AND message.channel=? AND message.message != ''
+    ORDER BY message.createdAt DESC
+    LIMIT 100
+  ) 
+  UNION
+  (
+    SELECT message.*, slack_user.name 
+    FROM message 
+    INNER JOIN slack_user ON slack_user.id=message.userIdId
+    WHERE message.userIdId != 39 AND message.teamId=? AND message.channel=? AND message.message != '' AND createdAt >= DATE_SUB(NOW(), ${interval}) 
+    ORDER BY createdAt DESC
+  ) ORDER BY createdAt ASC;`;
 
-    return getRepository(Message).query(query, [teamId, channel]);
+    return getRepository(Message).query(query, [teamId, channel, teamId, channel]);
   }
 }
