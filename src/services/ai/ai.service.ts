@@ -13,6 +13,14 @@ export class AIService {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
+  convertAsterisks(text: string | undefined): string | undefined {
+    if (!text) {
+      return text;
+    }
+    // Replace ** with *
+    return text.replace(/\*\*/g, '*');
+  }
+
   public decrementDaiyRequests(userId: string, teamId: string): Promise<string | null> {
     return this.redis.decrementDailyRequests(userId, teamId);
   }
@@ -41,7 +49,7 @@ export class AIService {
       })
       .then(async (x) => {
         await this.redis.removeInflight(userId, teamId);
-        return x.choices[0].message?.content?.trim();
+        return this.convertAsterisks(x.choices[0].message?.content?.trim());
       })
       .catch(async (e) => {
         await this.redis.removeInflight(userId, teamId);
@@ -127,7 +135,7 @@ export class AIService {
         if (isDaily) {
           await this.redis.setHasUsedSummary(userId, teamId);
         }
-        return x.choices[0].message?.content?.trim();
+        return this.convertAsterisks(x.choices[0].message?.content?.trim());
       })
       .catch(async (e) => {
         if (isDaily) {
@@ -161,7 +169,7 @@ export class AIService {
       })
       .then(async (x) => {
         await this.redis.removeInflight(userId, teamId);
-        return x.choices[0].message?.content?.trim();
+        return this.convertAsterisks(x.choices[0].message?.content?.trim());
       })
       .catch(async (e) => {
         await this.redis.removeInflight(userId, teamId);
